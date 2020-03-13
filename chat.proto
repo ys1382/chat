@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package grpc;
+
+message AuthRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message AuthResponse {
+    bool ok = 1;
+    string session = 2;
+}
+
+message ListenRequest {
+    string session = 1;
+}
+
+message Response {
+    bool ok = 1;
+}
+
+message Envelope {
+    string recipient = 1;
+    string payload = 2;
+    string session = 3;
+}
+
+message StoreRequest {
+    enum Verb {
+        CREATE = 0;
+        READ = 1;
+        UPDATE = 2;
+        DELETE = 3;
+    }
+    Verb verb = 1;
+    string key = 2;
+    repeated bytes data = 3;
+    uint32 skip = 4;
+    uint32 limit = 5;
+    string session = 6;
+}
+
+message StoreResponse {
+    bool ok = 1;
+    repeated bytes data = 2;
+}
+
+service Chat {
+    rpc Register (AuthRequest) returns (AuthResponse);
+    rpc Deregister (AuthRequest) returns (Response);
+    rpc Login (AuthRequest) returns (AuthResponse);
+
+    rpc Listen (ListenRequest) returns (stream Envelope);
+    rpc Send (Envelope) returns (Response);
+    rpc Store (StoreRequest) returns (StoreResponse);
+}
