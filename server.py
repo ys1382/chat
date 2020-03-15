@@ -2,6 +2,7 @@ import threading
 import binascii
 import pymongo
 import grpc
+import sys
 import chat_pb2 as chat
 import chat_pb2_grpc as rpc
 from queue import Queue
@@ -41,6 +42,7 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         return self.table.find_one(query)
 
     def Register(self, request: chat.AuthRequest, context):
+        print('Server: {} {}'.format('register', request.username))
         if self.find(request.username):
             print('Server: found ' + request.username)
             return chat.AuthResponse(ok=False)
@@ -48,6 +50,14 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         self.table.insert_one(entry)
         self.queues[request.username] = Queue()
         return self.Login(request, context)
+
+    def Deregister(self, request: chat.Request, context):
+        username = self.sessions[request.session]
+        print('Server: {} {}'.format('deregister', username))
+        query = {ChitChat.key_username: username}
+        self.table.delete_one(query)
+        self.queues[username] = None
+        return chat.Response(ok=True)
 
     def Login(self, request: chat.AuthRequest, context):
         print('Server: {} {}'.format('login', request.username))
@@ -122,6 +132,11 @@ class Client:
         if self.check('register', response):
             self.session = response.session
 
+    def deregister(self):
+        request = chat.Request(session=self.session)
+        response = self.stub.Deregister(request)
+        self.check('deregister', response)
+
     def login(self, username, password):
         request = chat.AuthRequest(username=username, password=password)
         response = self.stub.Login(request)
@@ -138,7 +153,6 @@ class Client:
 
     def heard(self):
         request = chat.ListenRequest(session=self.session)
-        response = self.stub.Listen(request)
         for envelope in self.stub.Listen(request):  # this line will wait for new messages from the server
             print('Client {}: {} says "{}"'.format(self.session, envelope.session, envelope.payload))
             bytes = str.encode(envelope.payload)
@@ -175,6 +189,22 @@ class Client:
         self.check('store', response)
         return response
 
+def test():
+    alice = Client('alice', 'alicepw', 'localhost')
+    bob = Client('bob', 'bobpw', 'localhost')
+    print('\n')
+    alice.store_create('the-key', [b'the-value'])
+    alice.store_read('the-key')
+    print('\n')
+    alice.send('bob', 'hi1')
+    alice.send('bob', 'hi2')
+    bob.send('alice', 'hi3')
+    print('\n')
+    alice.load_messages()
+    bob.load_messages()
+    print('\n')
+    alice.deregister()
+    bob.deregister()
 
 if __name__ == '__main__':
     port = 11912  # a random port for the server to run on
@@ -184,12 +214,7 @@ if __name__ == '__main__':
     server.add_insecure_port('[::]:' + str(port))
     server.start()
 
-    alice = Client('alice', 'alicepw', 'localhost')
-    bob = Client('bob', 'bobpw', 'localhost')
-    alice.store_create('the-key', [b'the-value'])
-    alice.store_read('the-key')
-    alice.send('bob', 'hi1')
-    alice.send('bob', 'hi2')
-    alice.load_messages()
-    bob.load_messages()
-
+    if len(sys.argv) > 1 and sys.argv[1] == 'test':
+        test()
+    else:
+        server.wait_for_termination()

@@ -2,6 +2,14 @@ syntax = "proto3";
 
 package grpc;
 
+message Request {
+    string session = 1;
+}
+
+message Response {
+    bool ok = 1;
+}
+
 message AuthRequest {
     string username = 1;
     string password = 2;
@@ -14,10 +22,6 @@ message AuthResponse {
 
 message ListenRequest {
     string session = 1;
-}
-
-message Response {
-    bool ok = 1;
 }
 
 message Envelope {
@@ -48,7 +52,7 @@ message StoreResponse {
 
 service Chat {
     rpc Register (AuthRequest) returns (AuthResponse);
-    rpc Deregister (AuthRequest) returns (Response);
+    rpc Deregister (Request) returns (Response);
     rpc Login (AuthRequest) returns (AuthResponse);
 
     rpc Listen (ListenRequest) returns (stream Envelope);
