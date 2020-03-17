@@ -15,104 +15,54 @@ struct LoginView : View {
 
     var body: some View {
         VStack {
-            WelcomeText()
-            UserImage()
-            UsernameTextField(username: $username,
-                              editingMode: $editingMode)
+            TitleLabel("ClearKeep")
+            UserImage(name: "phone")
+            UsernameField(value: $username, editingMode: $editingMode)
             PasswordSecureField(password: $password)
             HStack {
-                Button(action: { self.viewRouter.currentPage = "page2"}) {
-                    LoginButtonContent("LOGIN")
+                Button(action: login) {
+                    ButtonContent("LOGIN")
                     .padding(.trailing, 25)
                 }
-                Button(action: {}) {
-                    LoginButtonContent("REGISTER")
+                Button(action: register) {
+                    ButtonContent("REGISTER")
                 }
             }
         }
         .padding()
     }
-}
 
-#if DEBUG
-struct LoginView_Previews : PreviewProvider {
-    static var previews: some View {
-        LoginView().environmentObject(ViewRouter())
-    }
-}
-#endif
-
-struct WelcomeText : View {
-    var body: some View {
-        return Text("ChitChat")
-            .font(.largeTitle)
-            .fontWeight(.semibold)
-            .padding(.bottom, 20)
-    }
-}
-
-struct UserImage : View {
-    var body: some View {
-        return Image("phone")
-            .resizable()
-            .aspectRatio(contentMode: .fill)
-            .frame(width: 150, height: 150)
-            .clipped()
-            .cornerRadius(150)
-            .padding(.bottom, 75)
-    }
-}
-
-struct Buttons : View {
-    let action: () -> Void
-//    init() {//action: @escaping () -> Void) {
-//        self.action = action
-//    }
-    var body: some View {
-        return HStack {
-            Button(action: self.action) {
-                LoginButtonContent("LOGIN")
-                .padding(.trailing, 25)
+    func register() {
+        Backend.shared.registerWithServer(username, password) { success, error in
+            if success {
+                self.viewRouter.current = ViewRouter.Page.masterDetail
+            } else {
+                print("register failed \(String(describing: error))")
             }
-            Button(action: {}) {
-                LoginButtonContent("REGISTER")
+        }
+    }
+
+    func login() {
+        Backend.shared.loginWithServer(username, password) { success, error in
+            if success {
+                self.viewRouter.current = ViewRouter.Page.masterDetail
+            } else {
+                print("login failed \(String(describing: error))")
             }
         }
     }
 }
 
-struct LoginButtonContent : View {
-    init(_ text: String) {
-        self.text = text
-    }
+struct UsernameField : View {
 
-    private let text: String
-
-    var body: some View {
-        return Text(text)
-            .font(.headline)
-            .foregroundColor(.gray)
-            .padding()
-            .frame(width: 150, height: 60)
-            .cornerRadius(10.0)
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray, lineWidth: 1)
-        )
-    }
-}
-
-struct UsernameTextField : View {
-
-    @Binding var username: String
+    @Binding var value: String
     @Binding var editingMode: Bool
 
     var body: some View {
-        return TextField("Username", text: $username, onEditingChanged: {edit in
-                if edit == true {
-                    self.editingMode = true
-                } else {
-                    self.editingMode = false
-                }
+        return TextField("Username", text: $value, onEditingChanged: { edit in
+                self.editingMode = edit
             })
+            .autocapitalization(.none)
             .padding()
             .textFieldStyle(RoundedBorderTextFieldStyle())
     }
@@ -129,3 +79,11 @@ struct PasswordSecureField : View {
             .padding(.bottom, 50)
     }
 }
+
+#if DEBUG
+struct LoginView_Previews : PreviewProvider {
+    static var previews: some View {
+        LoginView().environmentObject(ViewRouter())
+    }
+}
+#endif

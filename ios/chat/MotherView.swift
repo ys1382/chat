@@ -1,15 +1,17 @@
+// Transitions from login to list screens
+
 import SwiftUI
 import Combine
 
 struct MotherView : View {
-    
+
     @EnvironmentObject var viewRouter: ViewRouter
-    
+
     var body: some View {
         VStack {
-            if viewRouter.currentPage == "page1" {
+            if viewRouter.current == .login {
                 LoginView()
-            } else if viewRouter.currentPage == "page2" {
+            } else if viewRouter.current == .masterDetail {
                 MasterDetailView().transition(.move(edge: .trailing))
             }
         }
@@ -25,8 +27,18 @@ struct MotherView_Previews : PreviewProvider {
 #endif
 
 class ViewRouter: ObservableObject {
+
+    enum Page {
+        case login
+        case masterDetail
+    }
+
+    private static func initialPage() -> Page {
+        return Backend.shared.loggedIn() ? .masterDetail : .login
+    }
+
     let objectWillChange = PassthroughSubject<ViewRouter,Never>()
-    var currentPage: String = "page1" {
+    var current: Page = ViewRouter.initialPage() {
         didSet {
             withAnimation() {
                 objectWillChange.send(self)

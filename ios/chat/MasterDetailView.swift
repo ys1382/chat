@@ -1,27 +1,30 @@
+// List of Rooms
+
 import SwiftUI
 
-private let dateFormatter: DateFormatter = {
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateStyle = .medium
-    dateFormatter.timeStyle = .medium
-    return dateFormatter
-}()
-
 struct MasterDetailView: View {
-    @State private var dates = [Date]()
+    @State private var rooms = [String]()
+    @State private var showModal = false
+    @State private var recipient: String = ""
 
     var body: some View {
         NavigationView {
-            MasterView(dates: $dates)
-                .navigationBarTitle(Text("Master"), displayMode: .inline)
+            MasterView(rooms: $rooms)
+                .navigationBarTitle(Text("Rooms"), displayMode: .inline)
                 .navigationBarItems(
                     leading: EditButton(),
-                    trailing: Button(
-                        action: {
-                            withAnimation { self.dates.insert(Date(), at: 0) }
-                        }
-                    ) {
+                    trailing: Button( action: {
+                        self.showModal = true
+                    }){
                         Image(systemName: "plus")
+                    }
+                    .sheet(isPresented: $showModal, onDismiss: {
+                        if !self.recipient.isEmpty {
+                            withAnimation { self.rooms.insert(self.recipient, at: 0) }
+                            self.recipient = ""
+                        }
+                    }) {
+                        ModalView(isPresented: self.$showModal, recipient: self.$recipient)
                     }
                 )
             DetailView()
@@ -29,38 +32,68 @@ struct MasterDetailView: View {
     }
 }
 
+struct ModalView: View {
+
+    @Binding var isPresented: Bool
+    @Binding var recipient: String
+
+    var body: some View {
+        VStack {
+            TitleLabel("Create a New Room")
+            UserImage(name: "door")
+            TextFieldContent(key: "Recipient", value: self.$recipient)
+                .padding(.bottom, 20)
+
+            HStack {
+                Button(action: {
+                    self.isPresented = false
+                }){
+                    ButtonContent("Ok")
+                }.padding(.trailing, 25)
+
+                Button(action: {
+                    self.isPresented = false
+                    self.recipient = ""
+                }){
+                    ButtonContent("Cancel")
+                }
+            }
+            Spacer()
+        }
+    }
+}
+
 struct MasterView: View {
-    @Binding var dates: [Date]
+    @Binding var rooms: [String]
 
     var body: some View {
         List {
-            ForEach(dates, id: \.self) { date in
+            ForEach(rooms, id: \.self) { room in
                 NavigationLink(
-                    destination: DetailView(selectedDate: date)
+                    destination: DetailView(selectedRoom: room)
                 ) {
-                    Text("\(date, formatter: dateFormatter)")
+                    Text(room)
                 }
             }.onDelete { indices in
-                indices.forEach { self.dates.remove(at: $0) }
+                indices.forEach { self.rooms.remove(at: $0) }
             }
         }
     }
 }
 
 struct DetailView: View {
-    var selectedDate: Date?
+    var selectedRoom: String?
 
     var body: some View {
         Group {
-            if selectedDate != nil {
-                Text("\(selectedDate!, formatter: dateFormatter)")
+            if selectedRoom != nil {
+                Text(selectedRoom ?? "Room")
             } else {
                 Text("Detail view content goes here")
             }
         }.navigationBarTitle(Text("Detail"))
     }
 }
-
 
 struct MasterDetailView_Previews: PreviewProvider {
     static var previews: some View {
