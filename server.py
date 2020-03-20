@@ -68,6 +68,15 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         self.sessions[request.username] = request.username
         return chat.AuthResponse(ok=True, session=request.username)
 
+    def Logout(self, request: chat.AuthRequest, context):
+        print('Server: {} {}'.format('logout', request.username))
+        found = self.find(request.username)
+        if not found or (found[ChitChat.key_password] != request.password):
+            print('Server: logout fail ' + request.username)
+            return chat.AuthResponse(ok=False)
+        self.sessions[request.username] = None
+        return chat.AuthResponse(ok=True)
+
     @staticmethod
     def log(action, request):
         print('Server: {} {}'.format(request.session, action))
@@ -111,7 +120,7 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         return response
 
 
-class Client:
+class TestClient:
 
     key_sent = 'sent'
     key_received = 'received'
@@ -190,8 +199,8 @@ class Client:
         return response
 
 def test():
-    alice = Client('alice', 'alicepw', 'localhost')
-    bob = Client('bob', 'bobpw', 'localhost')
+    alice = TestClient('alice', 'alicepw', 'localhost')
+    bob = TestClient('bob', 'bobpw', 'localhost')
     print('\n')
     alice.store_create('the-key', [b'the-value'])
     alice.store_read('the-key')
