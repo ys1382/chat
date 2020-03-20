@@ -50,6 +50,20 @@ class Backend {
         auth(username, password, completion, submit: client.login)
     }
 
+    func logoutFromServer( _ completion: @escaping (Bool, Error?) -> Void) {
+        guard let session = session else {
+            print("logout: no session")
+            completion(false, nil)
+            return
+        }
+        let request : Grpc_Request = .with {
+            $0.session = session
+        }
+        client.logout(request).response.whenComplete { result
+            in self.handleResult(result, completion)
+        }
+    }
+
     private func auth(_ username: String,
                       _ password: String,
                       _ completion: @escaping (Bool, Error?) -> Void,
@@ -72,6 +86,16 @@ class Backend {
         }
     }
 
+    private func handleResult(_ result: Result<Grpc_Response, Error>,
+                              _ completion: @escaping (Bool, Error?) -> Void) {
+        switch result {
+        case .success(let response):
+            completion(response.ok, nil)
+        case .failure(let error):
+            completion(false, error)
+        }
+    }
+
     func sendToPeer(recipient: String, payload: String, _ completion: @escaping (Bool, Error?) -> Void) {
         guard let session = session else {
             print("sendToPeer: no session")
@@ -84,12 +108,7 @@ class Backend {
             $0.session = session
         }
         client.send(request).response.whenComplete { result in
-            switch result {
-            case .success(let response):
-                completion(response.ok, nil)
-            case .failure(let error):
-                completion(false, error)
-            }
+            self.handleResult(result, completion)
         }
     }
 }

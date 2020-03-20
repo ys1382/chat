@@ -13,6 +13,8 @@ struct MotherView : View {
                 LoginView()
             } else if viewRouter.current == .masterDetail {
                 MasterDetailView().transition(.move(edge: .trailing))
+            } else if viewRouter.current == .profile {
+                ProfileView()
             }
         }
     }
@@ -31,6 +33,7 @@ class ViewRouter: ObservableObject {
     enum Page {
         case login
         case masterDetail
+        case profile
     }
 
     private static func initialPage() -> Page {

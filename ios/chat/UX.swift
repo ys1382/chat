@@ -27,7 +27,7 @@ struct UserImage : View {
             .frame(width: 150, height: 150)
             .clipped()
             .cornerRadius(150)
-            .padding()//.bottom, 75)
+            .padding()
     }
 }
 

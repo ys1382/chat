@@ -11,13 +11,12 @@ struct LoginView : View {
     @State var authenticationDidFail: Bool = false
     @State var authenticationDidSucceed: Bool = false
     @EnvironmentObject var viewRouter: ViewRouter
-    @State var editingMode: Bool = false
 
     var body: some View {
         VStack {
             TitleLabel("ClearKeep")
             UserImage(name: "phone")
-            UsernameField(value: $username, editingMode: $editingMode)
+            TextFieldContent(key: "Username", value: $username).autocapitalization(.none)
             PasswordSecureField(password: $password)
             HStack {
                 Button(action: login) {
@@ -35,7 +34,7 @@ struct LoginView : View {
     func register() {
         Backend.shared.registerWithServer(username, password) { success, error in
             if success {
-                self.viewRouter.current = ViewRouter.Page.masterDetail
+                self.viewRouter.current = .masterDetail
             } else {
                 print("register failed \(String(describing: error))")
             }
@@ -45,26 +44,11 @@ struct LoginView : View {
     func login() {
         Backend.shared.loginWithServer(username, password) { success, error in
             if success {
-                self.viewRouter.current = ViewRouter.Page.masterDetail
+                self.viewRouter.current = .masterDetail
             } else {
                 print("login failed \(String(describing: error))")
             }
         }
-    }
-}
-
-struct UsernameField : View {
-
-    @Binding var value: String
-    @Binding var editingMode: Bool
-
-    var body: some View {
-        return TextField("Username", text: $value, onEditingChanged: { edit in
-                self.editingMode = edit
-            })
-            .autocapitalization(.none)
-            .padding()
-            .textFieldStyle(RoundedBorderTextFieldStyle())
     }
 }
 
