@@ -16,7 +16,9 @@ struct LoginView : View {
         VStack {
             TitleLabel("ClearKeep")
             UserImage(name: "phone")
-            TextFieldContent(key: "Username", value: $username).autocapitalization(.none)
+            TextFieldContent(key: "Username", value: $username)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
             PasswordSecureField(password: $password)
             HStack {
                 Button(action: login) {
@@ -32,7 +34,7 @@ struct LoginView : View {
     }
 
     func register() {
-        Backend.shared.registerWithServer(username, password) { success, error in
+        Backend.shared.register(username, password) { success, error in
             if success {
                 self.viewRouter.current = .masterDetail
             } else {
@@ -42,7 +44,7 @@ struct LoginView : View {
     }
 
     func login() {
-        Backend.shared.loginWithServer(username, password) { success, error in
+        Backend.shared.login(username, password) { success, error in
             if success {
                 self.viewRouter.current = .masterDetail
             } else {

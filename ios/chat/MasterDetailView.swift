@@ -10,8 +10,7 @@ struct MasterDetailView: View {
 
     var body: some View {
 
-        let drag = DragGesture()
-        .onEnded {
+        let drag = DragGesture().onEnded {
             if $0.translation.width < -100 {
                 withAnimation {
                     self.showMenu = false
@@ -86,8 +85,9 @@ struct CreateRoomModal: View {
             TitleLabel("Create a New Room")
             UserImage(name: "door")
             TextFieldContent(key: "Recipient", value: self.$recipient)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
                 .padding(.bottom, 20)
-
             HStack {
                 Button(action: {
                     self.isPresented = false

@@ -33,6 +33,7 @@ internal protocol Grpc_ChatClientProtocol {
   func deregister(_ request: Grpc_Request, callOptions: CallOptions?) -> UnaryCall<Grpc_Request, Grpc_Response>
   func login(_ request: Grpc_AuthRequest, callOptions: CallOptions?) -> UnaryCall<Grpc_AuthRequest, Grpc_AuthResponse>
   func logout(_ request: Grpc_Request, callOptions: CallOptions?) -> UnaryCall<Grpc_Request, Grpc_Response>
+  func authenticate(_ request: Grpc_Request, callOptions: CallOptions?) -> UnaryCall<Grpc_Request, Grpc_Response>
   func listen(_ request: Grpc_ListenRequest, callOptions: CallOptions?, handler: @escaping (Grpc_Envelope) -> Void) -> ServerStreamingCall<Grpc_ListenRequest, Grpc_Envelope>
   func send(_ request: Grpc_Envelope, callOptions: CallOptions?) -> UnaryCall<Grpc_Envelope, Grpc_Response>
   func store(_ request: Grpc_StoreRequest, callOptions: CallOptions?) -> UnaryCall<Grpc_StoreRequest, Grpc_StoreResponse>
@@ -100,6 +101,18 @@ internal final class Grpc_ChatClient: GRPCClient, Grpc_ChatClientProtocol {
                               callOptions: callOptions ?? self.defaultCallOptions)
   }
 
+  /// Unary call to Authenticate
+  ///
+  /// - Parameters:
+  ///   - request: Request to send to Authenticate.
+  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
+  internal func authenticate(_ request: Grpc_Request, callOptions: CallOptions? = nil) -> UnaryCall<Grpc_Request, Grpc_Response> {
+    return self.makeUnaryCall(path: "/grpc.Chat/Authenticate",
+                              request: request,
+                              callOptions: callOptions ?? self.defaultCallOptions)
+  }
+
   /// Server streaming call to Listen
   ///
   /// - Parameters:
@@ -146,6 +159,7 @@ internal protocol Grpc_ChatProvider: CallHandlerProvider {
   func deregister(request: Grpc_Request, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Response>
   func login(request: Grpc_AuthRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_AuthResponse>
   func logout(request: Grpc_Request, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Response>
+  func authenticate(request: Grpc_Request, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Response>
   func listen(request: Grpc_ListenRequest, context: StreamingResponseCallContext<Grpc_Envelope>) -> EventLoopFuture<GRPCStatus>
   func send(request: Grpc_Envelope, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Response>
   func store(request: Grpc_StoreRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_StoreResponse>
@@ -183,6 +197,13 @@ extension Grpc_ChatProvider {
       return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.logout(request: request, context: context)
+        }
+      }
+
+    case "Authenticate":
+      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
+        return { request in
+          self.authenticate(request: request, context: context)
         }
       }
 

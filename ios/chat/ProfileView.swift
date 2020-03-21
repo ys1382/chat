@@ -11,7 +11,7 @@ struct ProfileView: View {
     }
 
     func logout() {
-        Backend.shared.logoutFromServer() { success, error in
+        Backend.shared.logout() { success, error in
             if success {
                 print("logged out")
             } else {
