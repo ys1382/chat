@@ -55,6 +55,7 @@ service Chat {
     rpc Deregister (Request) returns (Response);
     rpc Login (AuthRequest) returns (AuthResponse);
     rpc Logout (Request) returns (Response);
+    rpc Authenticate (Request) returns (Response);
 
     rpc Listen (ListenRequest) returns (stream Envelope);
     rpc Send (Envelope) returns (Response);

@@ -35,7 +35,7 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         # tables = db.list_collection_names()
         self.table = db[table_name]
 
-        self.table.drop()  # for testing
+        # self.table.drop()  # for testing
 
     def find(self, username):
         query = {ChitChat.key_username: username}
@@ -48,7 +48,6 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
             return chat.AuthResponse(ok=False)
         entry = {ChitChat.key_username: request.username, ChitChat.key_password: request.password}
         self.table.insert_one(entry)
-        self.queues[request.username] = Queue()
         return self.Login(request, context)
 
     def Deregister(self, request: chat.Request, context):
@@ -62,10 +61,14 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
     def Login(self, request: chat.AuthRequest, context):
         print('Server: {} {}'.format('login', request.username))
         found = self.find(request.username)
+        if not found:
+            print('Server: login fail -- {} not found'.format(request.username))
+        if found and (found[ChitChat.key_password] != request.password):
+            print('Server: login fail {} is not {}'.format(request.username, found[ChitChat.key_password]))
         if not found or (found[ChitChat.key_password] != request.password):
-            print('Server: login fail ' + request.username)
             return chat.AuthResponse(ok=False)
         self.sessions[request.username] = request.username
+        self.queues[request.username] = Queue()
         return chat.AuthResponse(ok=True, session=request.username)
 
     def Logout(self, request: chat.AuthRequest, context):
@@ -77,6 +80,12 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         self.sessions[request.username] = None
         return chat.AuthResponse(ok=True)
 
+    def Authenticate(self, request, context):
+        print('Server: {} {}'.format('authenticate', request.session))
+        self.sessions[request.session] = request.session
+        self.queues[request.session] = Queue()
+        return chat.Response(ok=True)
+
     @staticmethod
     def log(action, request):
         print('Server: {} {}'.format(request.session, action))
@@ -86,6 +95,7 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         if request.session in self.queues:
             while True:
                 data = self.queues[request.session].get()
+                print('yield ' + data.payload + ' for ' + request.session)
                 yield data
         else:
             print('Server listen: no queue for ' + request.session)
