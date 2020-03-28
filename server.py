@@ -1,12 +1,8 @@
-import threading
-import binascii
 import pymongo
 import grpc
-import sys
 import chat_pb2 as chat
 import chat_pb2_grpc as rpc
 from queue import Queue
-from concurrent import futures
 
 
 class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file which is generated
@@ -17,25 +13,22 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
     key = 'key'
 
     def __init__(self):
-        self.setup_db()
+        self.table = self.setup_db()
         self.q = Queue()
-        self.queues = {}
-        self.sessions = {}
+        self.queues = {} # maps username to queue
+        self.subscriptions = {}  # maps topics to usernames
+        self.sessions = {} # maps session to username
 
-    def setup_db(self):
-        self.store_handlers = {
-            chat.StoreRequest.Verb.CREATE: self.store_create,
-            chat.StoreRequest.Verb.READ: self.store_read
-        }
+    @staticmethod
+    def setup_db():
         db_name = 'users_database'
         table_name = 'users_table'
         db_client = pymongo.MongoClient('mongodb://localhost:27017/')
-        # dbs = db_client.list_database_names()
         db = db_client[db_name]
-        # tables = db.list_collection_names()
-        self.table = db[table_name]
 
-        # self.table.drop()  # for testing
+        db[table_name].drop()  # for testing
+
+        return db[table_name]
 
     def find(self, username):
         query = {ChitChat.key_username: username}
@@ -52,6 +45,9 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
 
     def Deregister(self, request: chat.Request, context):
         username = self.sessions[request.session]
+        if not username:
+            print('Server Deregister: session {} not found'.format(request.session))
+            return chat.Response(ok=False)
         print('Server: {} {}'.format('deregister', username))
         query = {ChitChat.key_username: username}
         self.table.delete_one(query)
@@ -69,6 +65,7 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
             return chat.AuthResponse(ok=False)
         self.sessions[request.username] = request.username
         self.queues[request.username] = Queue()
+        self.subscriptions[request.username] = []
         return chat.AuthResponse(ok=True, session=request.username)
 
     def Logout(self, request: chat.AuthRequest, context):
@@ -92,148 +89,120 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
 
     def Listen(self, request, context):
         ChitChat.log('listen', request)
-        if request.session in self.queues:
-            while True:
-                data = self.queues[request.session].get()
-                print('yield ' + data.payload + ' for ' + request.session)
-                yield data
-        else:
-            print('Server listen: no queue for ' + request.session)
-
-    def Send(self, request: chat.Envelope, context):
-        ChitChat.log('send', request)
-        if request.recipient in self.queues:
-            self.queues[request.recipient].put(request)
-            return chat.Response(ok=True)
-        else:
-            print('Server send: no queue for ' + request.recipient)
-            return chat.Response(ok=False)
-
-    def Store(self, request, context):
         username = self.sessions[request.session]
-        return self.store_handlers[request.verb](request, username)
+        if not username:
+            print('Server Listen: session {} not found'.format(request.session))
+            return chat.Response(ok=False)
+        if username in self.queues:
+            while True:
+                publish_request = self.queues[request.session].get() # blocking until the next .put for this queue
+                print('{} q.get {} for topic {}'.format(username, publish_request.data, publish_request.topic))
+                publication = chat.Publication(topic=publish_request.topic, data=publish_request.data)
+                yield publication
+        else:
+            print('Server listen: no subscription queue for ' + request.session)
 
-    def store_create(self, request, username):
-        ChitChat.log('store_create', request)
-        for datum in request.data:
-            entry = {ChitChat.key_username: username, ChitChat.key: request.key, ChitChat.key_data: datum}
-            self.table.insert_one(entry)
-        return chat.StoreResponse(ok=True)
+    def Subscribe(self, request, context):
+        ChitChat.log('subscribe', request)
+        if request.topic not in self.subscriptions:
+            self.subscriptions[request.topic] = set()
+        username = self.sessions[request.session]
+        if not username:
+            print('Server Subscribe: username {} not found'.format(username))
+            return chat.Response(ok=False)
+        self.subscriptions[request.topic].add(username)
+        return chat.Response(ok=True)
 
-    def store_read(self, request, username):
-        ChitChat.log('store_read', request)
-        query = {ChitChat.key_username: username, ChitChat.key: request.key}
+    def Unsubscribe(self, request, context):
+        ChitChat.log('subscribe', request)
+        username = self.sessions[request.session]
+        if not username:
+            print('Server Unsubscribe: session {} not found'.format(request.session))
+            return chat.Response(ok=False)
+        subscribers = self.subscriptions[request.topic] if request.topic in self.subscriptions else None
+        if not username:
+            print('unsubscribe: {} not found for session {}'.format(username, request.session))
+            return chat.Response(ok=False)
+        if request.topic not in self.subscriptions:
+            print('unsubscribe: topic {} not found'.format(request.topic))
+            return chat.Response(ok=False)
+        if username not in self.subscriptions[request.topic]:
+            print('unsubscribe: username {} not subscribed to topic'.format(username, request.topic))
+            return chat.Response(ok=False)
+        # phew!
+        subscribers.remove(username)
+        return chat.Response(ok=True)
+
+    # find all subscribers for the topic and put in their queues
+    def Publish(self, request: chat.PublishRequest, context):
+        ChitChat.log('publish', request)
+        subscribers = self.subscriptions[request.topic]
+        print('Server publish: subscribers={}'.format(subscribers))
+        if not subscribers:
+            print('Server publish: no subscribers for ' + request.topic)
+            return chat.Response(ok=true) # publication is still ok
+        for subscriber in subscribers:
+            if subscriber in self.queues:
+                self.queues[subscriber].put(request)
+                return chat.Response(ok=True)
+            else:
+                print('Server publish: no queue for {} in {}'.format(subscriber, self.queues.keys()))
+                return chat.Response(ok=False)
+
+    def Create(self, request: chat.PutRequest, context):
+        username = self.sessions[request.session]
+        if not username:
+            print('Server Create: session {} not found'.format(request.session))
+            return chat.PutResponse(ok=False)
+        entry = {ChitChat.key_username: username, ChitChat.key: request.key, ChitChat.key_data: request.data}
+        inserted_id = self.table.insert_one(entry).inserted_id
+        return chat.PutResponse(ok=True, id=str(inserted_id))
+
+    def Read(self, request: chat.GetRequest, context):
+        try:
+            query, username = self.find_query(request)
+        except KeyError:
+            return chat.GetResponse(ok=False)
+        print('Server Read: query={}'.format(query))
         found = self.table.find(query)
-        data = list(map(lambda item: item['data'], found))
-        response = chat.StoreResponse(ok=True)
-        response.data[:] = data
+        data = list(map(lambda item: chat.Datum(data=item['data']), found))
+        response = chat.GetResponse(ok=True, data=data)
         return response
 
+    def Update(self, request: chat.PutRequest, context):
+        try:
+            query, username = self.find_query(request)
+        except KeyError:
+            return chat.PutResponse(ok=False)
+        entry = { "$set": {ChitChat.key_username: username, ChitChat.key: request.key, ChitChat.key_data: request.data}}
+        self.table.update_one(query, entry)
+        return chat.Response(ok=True)
 
-class TestClient:
+    def Delete(self, request: chat.GetRequest, context):
+        try:
+            query, username = self.find_query(request)
+        except KeyError:
+            return chat.Response(ok=False)
+        self.table.delete_one(query)
+        return chat.Response(ok=True)
 
-    key_sent = 'sent'
-    key_received = 'received'
+    def find_query(self, request: chat.GetRequest):
+        username = self.sessions[request.session]
+        if not username:
+            raise KeyError('Server find_query: session {} not found'.format(request.session))
+        if request.id:
+            return {"_id": ObjectId(request.id)}, username
+        else:
+            return {ChitChat.key_username: username, ChitChat.key: request.key}, username
 
-    def __init__(self, username, password, host):
-        self.grpc(host)
-        self.register(username, password)
-        self.login(username, password)
-        self.listen()
-
-    def grpc(self, host):
-        channel = grpc.insecure_channel(host + ':' + str(port))
-        self.stub = rpc.ChatStub(channel)
-
-    def register(self, username, password):
-        request = chat.AuthRequest(username=username, password=password)
-        response = self.stub.Register(request)
-        if self.check('register', response):
-            self.session = response.session
-
-    def deregister(self):
-        request = chat.Request(session=self.session)
-        response = self.stub.Deregister(request)
-        self.check('deregister', response)
-
-    def login(self, username, password):
-        request = chat.AuthRequest(username=username, password=password)
-        response = self.stub.Login(request)
-        if self.check('login', response):
-            self.session = response.session
-
-    def check(self, action, response):
-        if response.ok:
-            return True
-        print('Client {}: {} not ok'.format(self.session, action))
-
-    def listen(self):
-        threading.Thread(target=self.heard, daemon=True).start()
-
-    def heard(self):
-        request = chat.ListenRequest(session=self.session)
-        for envelope in self.stub.Listen(request):  # this line will wait for new messages from the server
-            print('Client {}: {} says "{}"'.format(self.session, envelope.session, envelope.payload))
-            bytes = str.encode(envelope.payload)
-            self.store_create(Client.key_received, [bytes])
-
-    def send(self, recipient, text):
-        envelope = chat.Envelope(recipient=recipient, payload=text, session=self.session)
-        response = self.stub.Send(envelope)
-        self.check('send', response)
-        bytes = str.encode(text)
-        self.store_create(Client.key_sent, [bytes])
-
-    def load_messages(self):
-        self.store_read(Client.sent_key)
-
-    def load_messages(self):
-        print('Client {}: load_messages'.format(self.session))
-        self.store_read(Client.key_sent)
-        self.store_read(Client.key_received)
-
-    def store_create(self, key, data):
-        request = chat.StoreRequest(verb=chat.StoreRequest.Verb.CREATE, key=key, data=data, session=self.session)
-        return self.store(request)
-
-    def store_read(self, key):
-        request = chat.StoreRequest(verb=chat.StoreRequest.Verb.READ, key=key, session=self.session)
-        response = self.store(request)
-        for response_datum in response.data:
-            print('Client {}: store_read key={} value={}'.format(self.session, key, response_datum))
-        return response
-
-    def store(self, request):
-        response = self.stub.Store(request)
-        self.check('store', response)
-        return response
-
-def test():
-    alice = TestClient('alice', 'alicepw', 'localhost')
-    bob = TestClient('bob', 'bobpw', 'localhost')
-    print('\n')
-    alice.store_create('the-key', [b'the-value'])
-    alice.store_read('the-key')
-    print('\n')
-    alice.send('bob', 'hi1')
-    alice.send('bob', 'hi2')
-    bob.send('alice', 'hi3')
-    print('\n')
-    alice.load_messages()
-    bob.load_messages()
-    print('\n')
-    alice.deregister()
-    bob.deregister()
-
-if __name__ == '__main__':
-    port = 11912  # a random port for the server to run on
+def server_main():
+    port = 11912
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))  # create a gRPC server
-    rpc.add_ChatServicer_to_server(ChitChat(), server)  # register the server to gRPC
+    rpc.add_ChatServicer_to_server(ChitChat(), server) # register the server with gRPC
     print('Starting server. Listening on port {}'.format(port))
     server.add_insecure_port('[::]:' + str(port))
     server.start()
+    server.wait_for_termination()
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'test':
-        test()
-    else:
-        server.wait_for_termination()
+if __name__ == '__main__':
+    server_main()

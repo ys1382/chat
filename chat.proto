@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package grpc;
 
+
 message Request {
     string session = 1;
 }
@@ -20,35 +21,52 @@ message AuthResponse {
     string session = 2;
 }
 
-message ListenRequest {
-    string session = 1;
+message PutRequest {
+    string key = 1;
+    string id = 2;
+    bytes data = 3;
+    string session = 4;
 }
 
-message Envelope {
-    string recipient = 1;
-    string payload = 2;
-    string session = 3;
-}
-
-message StoreRequest {
-    enum Verb {
-        CREATE = 0;
-        READ = 1;
-        UPDATE = 2;
-        DELETE = 3;
-    }
-    Verb verb = 1;
-    string key = 2;
-    repeated bytes data = 3;
-    uint32 skip = 4;
-    uint32 limit = 5;
-    string session = 6;
-}
-
-message StoreResponse {
+message PutResponse {
     bool ok = 1;
-    repeated bytes data = 2;
+    string id = 2;
 }
+
+message GetRequest {
+    string key = 1;
+    string id = 2;
+//    uint32 skip = 3;
+//    uint32 limit = 4;
+    string session = 5;
+}
+
+message Datum {
+    string id = 1;
+    bytes data = 2;
+}
+
+message GetResponse {
+    bool ok = 1;
+    repeated Datum data = 2;
+}
+
+message PublishRequest {
+    string session = 1;
+    string topic = 2;
+    bytes data = 3;
+}
+
+message SubscribeRequest {
+    string session = 1;
+    string topic = 2;
+}
+
+message Publication {
+    string topic = 2;
+    bytes data = 3;
+}
+
 
 service Chat {
     rpc Register (AuthRequest) returns (AuthResponse);
@@ -57,7 +75,13 @@ service Chat {
     rpc Logout (Request) returns (Response);
     rpc Authenticate (Request) returns (Response);
 
-    rpc Listen (ListenRequest) returns (stream Envelope);
-    rpc Send (Envelope) returns (Response);
-    rpc Store (StoreRequest) returns (StoreResponse);
+    rpc Create (PutRequest) returns (PutResponse);
+    rpc Read (GetRequest) returns (GetResponse);
+    rpc Update (PutRequest) returns (PutResponse);
+    rpc Delete (GetRequest) returns (Response);
+
+    rpc Subscribe (SubscribeRequest) returns (Response);
+    rpc Unsubscribe (SubscribeRequest) returns (Response);
+    rpc Publish (PublishRequest) returns (Response);
+    rpc Listen (Request) returns (stream Publication);
 }
