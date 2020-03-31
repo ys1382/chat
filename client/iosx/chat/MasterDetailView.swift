@@ -21,7 +21,7 @@ struct MasterDetailView: View {
         return NavigationView {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    MasterView(rooms: self.$rooms, detail: self.$recipient)
+                    MasterView(rooms: self.$rooms)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .offset(x: self.showMenu ? geometry.size.width/2 : 0)
                         .disabled(self.showMenu ? true : false)
@@ -55,74 +55,6 @@ struct MasterDetailView: View {
             }) {
                 CreateRoomModal(isPresented: self.$showModal,
                                 recipient: self.$recipient)
-            }
-        }
-    }
-}
-
-struct MainView: View {
-    
-    @Binding var showMenu: Bool
-    
-    var body: some View {
-        Button(action: {
-            withAnimation {
-               self.showMenu = true
-            }
-        }) {
-            Text("Show Menu")
-        }
-    }
-}
-            
-struct CreateRoomModal: View {
-
-    @Binding var isPresented: Bool
-    @Binding var recipient: String
-
-    var body: some View {
-        VStack {
-            TitleLabel("Create a New Room")
-            UserImage(name: "door")
-            TextFieldContent(key: "Recipient", value: self.$recipient)
-                .autocapitalization(.none)
-                .disableAutocorrection(true)
-                .padding(.bottom, 20)
-            HStack {
-                Button(action: {
-                    self.isPresented = false
-                }){
-                    ButtonContent("Ok")
-                }.padding(.trailing, 25)
-
-                Button(action: {
-                    self.isPresented = false
-                    self.recipient = ""
-                }){
-                    ButtonContent("Cancel")
-                }
-            }
-            Spacer()
-        }
-    }
-}
-
-struct MasterView: View {
-    @Binding var rooms: [String]
-    @Binding var detail: String
-
-    var body: some View {
-        Group {
-            List {
-                ForEach(rooms, id: \.self) { room in
-                    NavigationLink(
-                        destination: DetailView(room: room)
-                    ) {
-                        Text(room)
-                    }
-                }.onDelete { indices in
-                    indices.forEach { self.rooms.remove(at: $0) }
-                }
             }
         }
     }

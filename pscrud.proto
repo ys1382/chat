@@ -1,7 +1,11 @@
+// pscrud
+// pub sub create read update delete
+// pronounced 'scrud'
+// used by generate-proto.sh to generate server and client GRPC interface code
+
 syntax = "proto3";
 
 package grpc;
-
 
 message Request {
     string session = 1;
@@ -63,17 +67,17 @@ message SubscribeRequest {
 }
 
 message Publication {
-    string topic = 2;
-    bytes data = 3;
+    string topic = 1;
+    bytes data = 2;
 }
 
 
-service Chat {
+service Pscrud {
     rpc Register (AuthRequest) returns (AuthResponse);
-    rpc Deregister (Request) returns (Response);
     rpc Login (AuthRequest) returns (AuthResponse);
+    rpc Authenticate (Request) returns (AuthResponse);
     rpc Logout (Request) returns (Response);
-    rpc Authenticate (Request) returns (Response);
+    rpc Deregister (Request) returns (Response);
 
     rpc Create (PutRequest) returns (PutResponse);
     rpc Read (GetRequest) returns (GetResponse);

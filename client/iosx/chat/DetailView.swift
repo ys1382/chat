@@ -3,20 +3,18 @@ import SwiftUI
 struct DetailView: View {
 
     private let selectedRoom: String
-    private var messages: [String] = ["one", "two", "three"]
+//    var messages: [String] = ["one", "two", "three"]
     @State private var nextMessage: String = ""
-
+    @ObservedObject var resource = Backend.shared
+    
     init(room: String) {
-        self.selectedRoom = room
+        selectedRoom = room
     }
 
     var body: some View {
         VStack {
-            List {
-                ForEach(messages, id: \.self) { message in
-                    Text(message)
-                }
-            }.navigationBarTitle(Text(self.selectedRoom))
+            List(resource.messages, rowContent: PostView.init)
+            .navigationBarTitle(Text(self.selectedRoom))
             HStack {
                 TextFieldContent(key: "Next message", value: self.$nextMessage)
                 Button( action: {
@@ -35,6 +33,16 @@ struct DetailView: View {
     }
 }
 
+struct PostView: View {
+    var postModel: PostModel
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(postModel.envelope.payload).bold()
+        }
+    }
+}
+
 // https://swiftui-lab.com/bug-navigationlink-isactive/
 struct MyBackButton: View {
     let label: String
@@ -49,6 +57,7 @@ struct MyBackButton: View {
         }
     }
 }
+
 struct DetailView_Previews: PreviewProvider {
     static var previews: some View {
         DetailView(room: "A Room with a View")

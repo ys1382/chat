@@ -1,0 +1,12 @@
+// client-only protobuf
+// passes through the server as a binary blob to the other clients
+
+syntax = "proto3";
+
+package chat;
+
+message Envelope {
+    string from = 1;
+    string to = 2;
+    string payload = 3;
+}

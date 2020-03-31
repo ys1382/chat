@@ -1,11 +1,12 @@
 import pymongo
 import grpc
-import chat_pb2 as chat
-import chat_pb2_grpc as rpc
+import pscrud_pb2 as chat
+import pscrud_pb2_grpc as rpc
 from queue import Queue
+from concurrent import futures
 
 
-class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file which is generated
+class Pscrud(rpc.PscrudServicer):# inherits from the protobuf rpc file which is generated
 
     key_username = 'username'
     key_password = 'password'
@@ -31,7 +32,7 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         return db[table_name]
 
     def find(self, username):
-        query = {ChitChat.key_username: username}
+        query = {Pscrud.key_username: username}
         return self.table.find_one(query)
 
     def Register(self, request: chat.AuthRequest, context):
@@ -39,7 +40,7 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         if self.find(request.username):
             print('Server: found ' + request.username)
             return chat.AuthResponse(ok=False)
-        entry = {ChitChat.key_username: request.username, ChitChat.key_password: request.password}
+        entry = {Pscrud.key_username: request.username, Pscrud.key_password: request.password}
         self.table.insert_one(entry)
         return self.Login(request, context)
 
@@ -49,7 +50,7 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
             print('Server Deregister: session {} not found'.format(request.session))
             return chat.Response(ok=False)
         print('Server: {} {}'.format('deregister', username))
-        query = {ChitChat.key_username: username}
+        query = {Pscrud.key_username: username}
         self.table.delete_one(query)
         self.queues[username] = None
         return chat.Response(ok=True)
@@ -59,36 +60,43 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         found = self.find(request.username)
         if not found:
             print('Server: login fail -- {} not found'.format(request.username))
-        if found and (found[ChitChat.key_password] != request.password):
-            print('Server: login fail {} is not {}'.format(request.username, found[ChitChat.key_password]))
-        if not found or (found[ChitChat.key_password] != request.password):
+        if found and (found[Pscrud.key_password] != request.password):
+            print('Server: login fail {} is not {}'.format(request.username, found[Pscrud.key_password]))
+        if not found or (found[Pscrud.key_password] != request.password):
             return chat.AuthResponse(ok=False)
         self.sessions[request.username] = request.username
         self.queues[request.username] = Queue()
-        self.subscriptions[request.username] = []
+        self.subscriptions[request.username] = set()
+        print('Server: login success for {}'.format(request.username))
         return chat.AuthResponse(ok=True, session=request.username)
 
     def Logout(self, request: chat.AuthRequest, context):
-        print('Server: {} {}'.format('logout', request.username))
-        found = self.find(request.username)
-        if not found or (found[ChitChat.key_password] != request.password):
-            print('Server: logout fail ' + request.username)
+        print('Server: {} {}'.format('logout', request.session))
+        found = self.find(request.session)
+        if not found or (found[Pscrud.key_password] != request.password):
+            print('Server: logout fail ' + request.session)
             return chat.AuthResponse(ok=False)
-        self.sessions[request.username] = None
+        self.sessions[request.session] = None
         return chat.AuthResponse(ok=True)
 
     def Authenticate(self, request, context):
         print('Server: {} {}'.format('authenticate', request.session))
         self.sessions[request.session] = request.session
+        username = self.sessions[request.session]
+        if not username:
+            print('Server Authenticate: session {} not found'.format(request.session))
+            return chat.Response(ok=False)
+        self.subscriptions[username] = set()
         self.queues[request.session] = Queue()
         return chat.Response(ok=True)
 
     @staticmethod
-    def log(action, request):
-        print('Server: {} {}'.format(request.session, action))
+    def log(action, request=None):
+        session = (request.session + ' ') if request else ''
+        print('Server: {}{}'.format(session, action))
 
     def Listen(self, request, context):
-        ChitChat.log('listen', request)
+        Pscrud.log('listen', request)
         username = self.sessions[request.session]
         if not username:
             print('Server Listen: session {} not found'.format(request.session))
@@ -96,46 +104,51 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         if username in self.queues:
             while True:
                 publish_request = self.queues[request.session].get() # blocking until the next .put for this queue
-                print('{} q.get {} for topic {}'.format(username, publish_request.data, publish_request.topic))
+                print('Server listen: {} q.get {} for topic {}'.format(username, publish_request.data, publish_request.topic))
                 publication = chat.Publication(topic=publish_request.topic, data=publish_request.data)
                 yield publication
         else:
             print('Server listen: no subscription queue for ' + request.session)
 
     def Subscribe(self, request, context):
-        ChitChat.log('subscribe', request)
-        if request.topic not in self.subscriptions:
-            self.subscriptions[request.topic] = set()
+        Pscrud.log('subscribe', request)
         username = self.sessions[request.session]
         if not username:
-            print('Server Subscribe: username {} not found'.format(username))
+            print('Server subscribe: session {} not found'.format(request.session))
             return chat.Response(ok=False)
+        print('Server subscribe: username={}'.format(username))
+        print('Server subscribe: subscriptions={}'.format(self.subscriptions))
+        if request.topic not in self.subscriptions:
+            print('subscriptions new topic {}'.format(request.topic))
+            self.subscriptions[request.topic] = set()
+        print('subscriptions add {} for {}'.format(request.topic, username))
         self.subscriptions[request.topic].add(username)
+        print('subscriptions done')
         return chat.Response(ok=True)
 
     def Unsubscribe(self, request, context):
-        ChitChat.log('subscribe', request)
+        Pscrud.log('subscribe', request)
         username = self.sessions[request.session]
         if not username:
             print('Server Unsubscribe: session {} not found'.format(request.session))
             return chat.Response(ok=False)
-        subscribers = self.subscriptions[request.topic] if request.topic in self.subscriptions else None
-        if not username:
-            print('unsubscribe: {} not found for session {}'.format(username, request.session))
-            return chat.Response(ok=False)
         if request.topic not in self.subscriptions:
-            print('unsubscribe: topic {} not found'.format(request.topic))
+            print('Server unsubscribe: topic {} not found'.format(request.topic))
             return chat.Response(ok=False)
         if username not in self.subscriptions[request.topic]:
-            print('unsubscribe: username {} not subscribed to topic'.format(username, request.topic))
+            print('Server unsubscribe: username {} not subscribed to topic'.format(username, request.topic))
             return chat.Response(ok=False)
+        subscribers = self.subscriptions[request.topic] if request.topic in self.subscriptions else None
         # phew!
         subscribers.remove(username)
         return chat.Response(ok=True)
 
     # find all subscribers for the topic and put in their queues
     def Publish(self, request: chat.PublishRequest, context):
-        ChitChat.log('publish', request)
+        Pscrud.log('publish', request)
+        if request.topic not in self.subscriptions:
+            print('Server publish: topic {} not found'.format(request.topic))
+            return chat.Response(ok=False)
         subscribers = self.subscriptions[request.topic]
         print('Server publish: subscribers={}'.format(subscribers))
         if not subscribers:
@@ -144,17 +157,17 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         for subscriber in subscribers:
             if subscriber in self.queues:
                 self.queues[subscriber].put(request)
-                return chat.Response(ok=True)
             else:
                 print('Server publish: no queue for {} in {}'.format(subscriber, self.queues.keys()))
-                return chat.Response(ok=False)
+        print('Server published')
+        return chat.Response(ok=True)
 
     def Create(self, request: chat.PutRequest, context):
         username = self.sessions[request.session]
         if not username:
             print('Server Create: session {} not found'.format(request.session))
             return chat.PutResponse(ok=False)
-        entry = {ChitChat.key_username: username, ChitChat.key: request.key, ChitChat.key_data: request.data}
+        entry = {Pscrud.key_username: username, Pscrud.key: request.key, Pscrud.key_data: request.data}
         inserted_id = self.table.insert_one(entry).inserted_id
         return chat.PutResponse(ok=True, id=str(inserted_id))
 
@@ -174,7 +187,7 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
             query, username = self.find_query(request)
         except KeyError:
             return chat.PutResponse(ok=False)
-        entry = { "$set": {ChitChat.key_username: username, ChitChat.key: request.key, ChitChat.key_data: request.data}}
+        entry = { "$set": {Pscrud.key_username: username, Pscrud.key: request.key, Pscrud.key_data: request.data}}
         self.table.update_one(query, entry)
         return chat.Response(ok=True)
 
@@ -193,12 +206,12 @@ class ChitChat(rpc.ChatServicer):  # inheriting here from the protobuf rpc file 
         if request.id:
             return {"_id": ObjectId(request.id)}, username
         else:
-            return {ChitChat.key_username: username, ChitChat.key: request.key}, username
+            return {Pscrud.key_username: username, Pscrud.key: request.key}, username
 
 def server_main():
     port = 11912
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))  # create a gRPC server
-    rpc.add_ChatServicer_to_server(ChitChat(), server) # register the server with gRPC
+    rpc.add_PscrudServicer_to_server(Pscrud(), server) # register the server with gRPC
     print('Starting server. Listening on port {}'.format(port))
     server.add_insecure_port('[::]:' + str(port))
     server.start()
