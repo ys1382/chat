@@ -3,10 +3,12 @@
 import SwiftUI
 
 struct MasterDetailView: View {
-    @State private var rooms = [String]()
+//    @State private var rooms = [String]()
     @State private var recipient: String = ""
     @State private var showMenu = false
     @State private var showModal = false
+
+    @ObservedObject var resource = Backend.shared
 
     var body: some View {
 
@@ -21,7 +23,7 @@ struct MasterDetailView: View {
         return NavigationView {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    MasterView(rooms: self.$rooms)
+                    MasterView()
                         .frame(width: geometry.size.width, height: geometry.size.height)
                         .offset(x: self.showMenu ? geometry.size.width/2 : 0)
                         .disabled(self.showMenu ? true : false)
@@ -50,11 +52,12 @@ struct MasterDetailView: View {
                 }
             ).sheet(isPresented: $showModal, onDismiss: {
                 if !self.recipient.isEmpty {
-                    self.rooms.insert(self.recipient, at: 0)
+//                    self.rooms.insert(self.recipient, at: 0)
+                    let roomModel = RoomModel(id: self.recipient)
+                    self.resource.rooms.insert(roomModel, at: 0)
                 }
             }) {
-                CreateRoomModal(isPresented: self.$showModal,
-                                recipient: self.$recipient)
+                CreateRoomModal(isPresented: self.$showModal, recipient: self.$recipient)
             }
         }
     }

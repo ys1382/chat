@@ -8,7 +8,6 @@
 
 // pscrud
 // pub sub create read update delete
-// pronounced 'scrud'
 // used by generate-proto.sh to generate server and client GRPC interface code
 
 import Foundation
@@ -188,6 +187,8 @@ struct Grpc_Publication {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
+
+  var id: String = String()
 
   var topic: String = String()
 
@@ -602,6 +603,7 @@ extension Grpc_SubscribeRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
 extension Grpc_Publication: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".Publication"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "id"),
     2: .same(proto: "topic"),
     3: .same(proto: "data"),
   ]
@@ -609,6 +611,7 @@ extension Grpc_Publication: SwiftProtobuf.Message, SwiftProtobuf._MessageImpleme
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
+      case 1: try decoder.decodeSingularStringField(value: &self.id)
       case 2: try decoder.decodeSingularStringField(value: &self.topic)
       case 3: try decoder.decodeSingularBytesField(value: &self.data)
       default: break
@@ -617,6 +620,9 @@ extension Grpc_Publication: SwiftProtobuf.Message, SwiftProtobuf._MessageImpleme
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.id.isEmpty {
+      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    }
     if !self.topic.isEmpty {
       try visitor.visitSingularStringField(value: self.topic, fieldNumber: 2)
     }
@@ -627,6 +633,7 @@ extension Grpc_Publication: SwiftProtobuf.Message, SwiftProtobuf._MessageImpleme
   }
 
   static func ==(lhs: Grpc_Publication, rhs: Grpc_Publication) -> Bool {
+    if lhs.id != rhs.id {return false}
     if lhs.topic != rhs.topic {return false}
     if lhs.data != rhs.data {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}

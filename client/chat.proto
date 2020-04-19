@@ -5,8 +5,17 @@ syntax = "proto3";
 
 package chat;
 
+message Handshake {
+    string from = 1;
+    string to = 2;
+    bytes signing_key = 3;
+    bytes agreement_key = 4;
+}
+
 message Envelope {
     string from = 1;
     string to = 2;
-    string payload = 3;
+    bytes agreement_key = 3;
+    bytes payload = 4;
+    bytes signature = 5;
 }

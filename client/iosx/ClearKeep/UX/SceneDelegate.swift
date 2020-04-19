@@ -8,6 +8,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                willConnectTo session: UISceneSession,
                options connectionOptions: UIScene.ConnectionOptions) {
 
+        Backend.shared.reauthenticate() { _,_ in
+            DispatchQueue.main.async {
+                self.show(scene)
+            }
+        }
+    }
+
+    private func show(_ scene: UIScene) {
         let contentView = MotherView()
             .environmentObject(ViewRouter())
 

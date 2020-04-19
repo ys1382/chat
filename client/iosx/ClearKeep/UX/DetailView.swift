@@ -3,7 +3,6 @@ import SwiftUI
 struct DetailView: View {
 
     private let selectedRoom: String
-//    var messages: [String] = ["one", "two", "three"]
     @State private var nextMessage: String = ""
     @ObservedObject var resource = Backend.shared
     
@@ -13,8 +12,11 @@ struct DetailView: View {
 
     var body: some View {
         VStack {
-            List(resource.messages, rowContent: PostView.init)
-            .navigationBarTitle(Text(self.selectedRoom))
+//            List(resource.messages, rowContent: PostView.init)
+            List(resource.messages, id: \.id) { landmark in
+                PostView(postModel: landmark)
+            }
+                .navigationBarTitle(Text(self.selectedRoom))
             HStack {
                 TextFieldContent(key: "Next message", value: self.$nextMessage)
                 Button( action: {
@@ -27,7 +29,12 @@ struct DetailView: View {
     }
 
     private func send() {
-        Backend.shared.sendToPeer(recipient: self.selectedRoom, payload: nextMessage) { success, error in
+        guard let payload = nextMessage.data(using: .utf8) else {
+            print("Could not stringify \(nextMessage)")
+            return
+        }
+        Backend.shared.sendToPeer(recipient: self.selectedRoom,
+                                  payload: payload) { success, error in
             print("DetailView sent: success=\(success), error=\(String(describing: error))")
         }
     }
@@ -38,8 +45,12 @@ struct PostView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text(postModel.envelope.payload).bold()
+            Text(stringValue()).bold()
         }
+    }
+
+    private func stringValue() -> String {
+        return String(data: postModel.envelope.payload, encoding: .utf8) ?? "x"
     }
 }
 

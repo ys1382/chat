@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='grpc',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x0cpscrud.proto\x12\x04grpc\"\x1a\n\x07Request\x12\x0f\n\x07session\x18\x01 \x01(\t\"\x16\n\x08Response\x12\n\n\x02ok\x18\x01 \x01(\x08\"1\n\x0b\x41uthRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"+\n\x0c\x41uthResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\x0f\n\x07session\x18\x02 \x01(\t\"D\n\nPutRequest\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\x12\x0f\n\x07session\x18\x04 \x01(\t\"%\n\x0bPutResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\n\n\x02id\x18\x02 \x01(\t\"6\n\nGetRequest\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\x12\x0f\n\x07session\x18\x05 \x01(\t\"!\n\x05\x44\x61tum\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\"4\n\x0bGetResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\x19\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x0b.grpc.Datum\">\n\x0ePublishRequest\x12\x0f\n\x07session\x18\x01 \x01(\t\x12\r\n\x05topic\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\"2\n\x10SubscribeRequest\x12\x0f\n\x07session\x18\x01 \x01(\t\x12\r\n\x05topic\x18\x02 \x01(\t\"*\n\x0bPublication\x12\r\n\x05topic\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\x32\xf6\x04\n\x06Pscrud\x12\x31\n\x08Register\x12\x11.grpc.AuthRequest\x1a\x12.grpc.AuthResponse\x12.\n\x05Login\x12\x11.grpc.AuthRequest\x1a\x12.grpc.AuthResponse\x12\x31\n\x0c\x41uthenticate\x12\r.grpc.Request\x1a\x12.grpc.AuthResponse\x12\'\n\x06Logout\x12\r.grpc.Request\x1a\x0e.grpc.Response\x12+\n\nDeregister\x12\r.grpc.Request\x1a\x0e.grpc.Response\x12-\n\x06\x43reate\x12\x10.grpc.PutRequest\x1a\x11.grpc.PutResponse\x12+\n\x04Read\x12\x10.grpc.GetRequest\x1a\x11.grpc.GetResponse\x12-\n\x06Update\x12\x10.grpc.PutRequest\x1a\x11.grpc.PutResponse\x12*\n\x06\x44\x65lete\x12\x10.grpc.GetRequest\x1a\x0e.grpc.Response\x12\x33\n\tSubscribe\x12\x16.grpc.SubscribeRequest\x1a\x0e.grpc.Response\x12\x35\n\x0bUnsubscribe\x12\x16.grpc.SubscribeRequest\x1a\x0e.grpc.Response\x12/\n\x07Publish\x12\x14.grpc.PublishRequest\x1a\x0e.grpc.Response\x12,\n\x06Listen\x12\r.grpc.Request\x1a\x11.grpc.Publication0\x01\x62\x06proto3'
+  serialized_pb=b'\n\x0cpscrud.proto\x12\x04grpc\"\x1a\n\x07Request\x12\x0f\n\x07session\x18\x01 \x01(\t\"\x16\n\x08Response\x12\n\n\x02ok\x18\x01 \x01(\x08\"1\n\x0b\x41uthRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"+\n\x0c\x41uthResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\x0f\n\x07session\x18\x02 \x01(\t\"D\n\nPutRequest\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\x12\x0f\n\x07session\x18\x04 \x01(\t\"%\n\x0bPutResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\n\n\x02id\x18\x02 \x01(\t\"6\n\nGetRequest\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\x12\x0f\n\x07session\x18\x05 \x01(\t\"!\n\x05\x44\x61tum\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\"4\n\x0bGetResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\x19\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x0b.grpc.Datum\">\n\x0ePublishRequest\x12\x0f\n\x07session\x18\x01 \x01(\t\x12\r\n\x05topic\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\"2\n\x10SubscribeRequest\x12\x0f\n\x07session\x18\x01 \x01(\t\x12\r\n\x05topic\x18\x02 \x01(\t\"6\n\x0bPublication\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05topic\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x03 \x01(\x0c\x32\xf6\x04\n\x06Pscrud\x12\x31\n\x08Register\x12\x11.grpc.AuthRequest\x1a\x12.grpc.AuthResponse\x12.\n\x05Login\x12\x11.grpc.AuthRequest\x1a\x12.grpc.AuthResponse\x12\x31\n\x0c\x41uthenticate\x12\r.grpc.Request\x1a\x12.grpc.AuthResponse\x12\'\n\x06Logout\x12\r.grpc.Request\x1a\x0e.grpc.Response\x12+\n\nDeregister\x12\r.grpc.Request\x1a\x0e.grpc.Response\x12-\n\x06\x43reate\x12\x10.grpc.PutRequest\x1a\x11.grpc.PutResponse\x12+\n\x04Read\x12\x10.grpc.GetRequest\x1a\x11.grpc.GetResponse\x12-\n\x06Update\x12\x10.grpc.PutRequest\x1a\x11.grpc.PutResponse\x12*\n\x06\x44\x65lete\x12\x10.grpc.GetRequest\x1a\x0e.grpc.Response\x12\x33\n\tSubscribe\x12\x16.grpc.SubscribeRequest\x1a\x0e.grpc.Response\x12\x35\n\x0bUnsubscribe\x12\x16.grpc.SubscribeRequest\x1a\x0e.grpc.Response\x12/\n\x07Publish\x12\x14.grpc.PublishRequest\x1a\x0e.grpc.Response\x12,\n\x06Listen\x12\r.grpc.Request\x1a\x11.grpc.Publication0\x01\x62\x06proto3'
 )
 
 
@@ -464,14 +464,21 @@ _PUBLICATION = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='topic', full_name='grpc.Publication.topic', index=0,
+      name='id', full_name='grpc.Publication.id', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='topic', full_name='grpc.Publication.topic', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='data', full_name='grpc.Publication.data', index=1,
+      name='data', full_name='grpc.Publication.data', index=2,
       number=3, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=b"",
       message_type=None, enum_type=None, containing_type=None,
@@ -490,7 +497,7 @@ _PUBLICATION = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=540,
-  serialized_end=582,
+  serialized_end=594,
 )
 
 _GETRESPONSE.fields_by_name['data'].message_type = _DATUM
@@ -600,8 +607,8 @@ _PSCRUD = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=585,
-  serialized_end=1215,
+  serialized_start=597,
+  serialized_end=1227,
   methods=[
   _descriptor.MethodDescriptor(
     name='Register',

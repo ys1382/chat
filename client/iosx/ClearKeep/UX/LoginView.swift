@@ -66,10 +66,8 @@ struct PasswordSecureField : View {
     }
 }
 
-#if DEBUG
 struct LoginView_Previews : PreviewProvider {
     static var previews: some View {
         LoginView().environmentObject(ViewRouter())
     }
 }
-#endif

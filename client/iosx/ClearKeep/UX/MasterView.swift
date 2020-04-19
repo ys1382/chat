@@ -1,19 +1,20 @@
 import SwiftUI
 
 struct MasterView: View {
-    @Binding var rooms: [String]
+
+    @ObservedObject var resource = Backend.shared
 
     var body: some View {
         Group {
             List {
-                ForEach(rooms, id: \.self) { room in
+                ForEach(resource.rooms, id: \.self) { room in
                     NavigationLink(
-                        destination: DetailView(room: room)
+                        destination: DetailView(room: room.id)
                     ) {
-                        Text(room)
+                        Text(room.id)
                     }
                 }.onDelete { indices in
-                    indices.forEach { self.rooms.remove(at: $0) }
+                    indices.forEach { self.resource.rooms.remove(at: $0) }
                 }
             }
         }
@@ -53,10 +54,7 @@ struct CreateRoomModal: View {
 }
 
 struct MasterView_Previews: PreviewProvider {
-    @State static var rooms: [String] = ["Rome One", "Rome Two"]
-//    @State static var detail: String = "Some detail"
-
     static var previews: some View {
-        MasterView(rooms: $rooms)
+        MasterView()
     }
 }

@@ -20,13 +20,11 @@ struct MotherView : View {
     }
 }
 
-#if DEBUG
 struct MotherView_Previews : PreviewProvider {
     static var previews: some View {
         MotherView().environmentObject(ViewRouter())
     }
 }
-#endif
 
 class ViewRouter: ObservableObject {
 

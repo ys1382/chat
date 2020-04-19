@@ -10,6 +10,7 @@ class Pscrud(rpc.PscrudServicer):# inherits from the protobuf rpc file which is 
 
     key_username = 'username'
     key_password = 'password'
+    key_publication = 'publication'
     key_data = 'data'
     key = 'key'
 
@@ -103,9 +104,8 @@ class Pscrud(rpc.PscrudServicer):# inherits from the protobuf rpc file which is 
             return chat.Response(ok=False)
         if username in self.queues:
             while True:
-                publish_request = self.queues[request.session].get() # blocking until the next .put for this queue
-                print('Server listen: {} q.get {} for topic {}'.format(username, publish_request.data, publish_request.topic))
-                publication = chat.Publication(topic=publish_request.topic, data=publish_request.data)
+                publication = self.queues[request.session].get() # blocking until the next .put for this queue
+                print('Server listen: {} q.get {} for topic {}'.format(username, publication.data, publication.topic))
                 yield publication
         else:
             print('Server listen: no subscription queue for ' + request.session)
@@ -123,7 +123,7 @@ class Pscrud(rpc.PscrudServicer):# inherits from the protobuf rpc file which is 
             self.subscriptions[request.topic] = set()
         print('subscriptions add {} for {}'.format(request.topic, username))
         self.subscriptions[request.topic].add(username)
-        print('subscriptions done')
+        print('subscriptions done: {}'.format(self.subscriptions))
         return chat.Response(ok=True)
 
     def Unsubscribe(self, request, context):
@@ -153,14 +153,27 @@ class Pscrud(rpc.PscrudServicer):# inherits from the protobuf rpc file which is 
         print('Server publish: subscribers={}'.format(subscribers))
         if not subscribers:
             print('Server publish: no subscribers for ' + request.topic)
-            return chat.Response(ok=true) # publication is still ok
+            return chat.Response(ok=true)
+
         for subscriber in subscribers:
+            print('Server publish: subscriber = {}'.format(subscriber))
             if subscriber in self.queues:
-                self.queues[subscriber].put(request)
+                publication = chat.Publication(topic=request.topic, data=request.data)
+                publication.id = self.store(subscriber, publication.data)
+                self.queues[subscriber].put(publication)
+                print('Server put')
             else:
                 print('Server publish: no queue for {} in {}'.format(subscriber, self.queues.keys()))
+
         print('Server published')
         return chat.Response(ok=True)
+
+    def store(self, subscriber, data):
+        print('Server store for {}: {}'.format(subscriber, data))
+        entry = {Pscrud.key_username: subscriber, Pscrud.key: Pscrud.key_publication, Pscrud.key_data: data}
+        id = str(self.table.insert_one(entry).inserted_id)
+        print('Server stored id=' + id)
+        return id
 
     def Create(self, request: chat.PutRequest, context):
         username = self.sessions[request.session]
@@ -169,16 +182,22 @@ class Pscrud(rpc.PscrudServicer):# inherits from the protobuf rpc file which is 
             return chat.PutResponse(ok=False)
         entry = {Pscrud.key_username: username, Pscrud.key: request.key, Pscrud.key_data: request.data}
         inserted_id = self.table.insert_one(entry).inserted_id
+        print('Server Create: data={}'.format(request.data))
         return chat.PutResponse(ok=True, id=str(inserted_id))
 
     def Read(self, request: chat.GetRequest, context):
         try:
             query, username = self.find_query(request)
         except KeyError:
+            print('Server Read KeyError')
             return chat.GetResponse(ok=False)
         print('Server Read: query={}'.format(query))
-        found = self.table.find(query)
-        data = list(map(lambda item: chat.Datum(data=item['data']), found))
+        found = list(self.table.find(query))
+        print('Server Read: found={}'.format(found))
+        ids = list(map(lambda item: str(item['_id']), found))
+        print('Server Read: ids={}'.format(ids))
+        data = list(map(lambda item: chat.Datum(id=str(item['_id']), data=item['data']), found))
+        print('Server Read: data={}'.format(data))
         response = chat.GetResponse(ok=True, data=data)
         return response
 

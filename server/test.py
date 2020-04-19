@@ -51,8 +51,8 @@ class TestClient:
     def heard(self):
         request = pscrud.Request(session=self.session)
         for publication in self.stub.Listen(request):  # this line will wait for new messages from the server
-            print('TestClient {}: heard on topic {}: {}'.format(self.session, publication.topic, publication.data))
-            # bytes = str.encode(publication.data)
+            value = publication.data.decode("utf-8")
+            print('TestClient {}: heard on topic {}: {}'.format(self.session, publication.topic, value))
             self.create(TestClient.key_received, publication.data)
 
     def create(self, key, data):
@@ -60,11 +60,12 @@ class TestClient:
         response = self.stub.Create(request)
         self.check('create', response)
 
-    def read(self, key, row_id):
+    def read(self, key, row_id=None):
         request = pscrud.GetRequest(key=key, id=row_id, session=self.session)
         response = self.stub.Read(request)
         for response_datum in response.data:
-            print('TestClient {}: read key={} value={}'.format(self.session, key, response_datum))
+            value = response_datum.data.decode("utf-8")
+            print('TestClient {}: read key={} value={}'.format(self.session, key, value))
         return response
 
     def update(self, key, row_id, data):
@@ -83,10 +84,15 @@ class TestClient:
         self.check('subscribe', response)
 
     def publish(self, topic, data):
-        print('TestClient {} publish {} to topic {}'.format(self.username, data, topic))
+        value = data.decode("utf-8")
+        print('TestClient {} publish {} to topic {}'.format(self.username, value, topic))
         request = pscrud.PublishRequest(topic=topic, data=data, session=self.session)
         response = self.stub.Publish(request)
         self.check('publish', response)
+
+    def download(self):
+        print('TestClient download')
+        self.read('publication')
 
 def test_clients(port):
     alice = TestClient('alice', 'alicepw', 'localhost', port)
@@ -99,6 +105,7 @@ def test_clients(port):
     bob_subscription = "bob-subscription"
     bob.subscribe(bob_subscription)
     alice.publish(bob_subscription, b'alice-publication-to-bob')
+    bob.download()
     print('')
 
     # CRUD

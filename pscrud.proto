@@ -1,6 +1,5 @@
 // pscrud
 // pub sub create read update delete
-// pronounced 'scrud'
 // used by generate-proto.sh to generate server and client GRPC interface code
 
 syntax = "proto3";
@@ -67,8 +66,9 @@ message SubscribeRequest {
 }
 
 message Publication {
-    string topic = 1;
-    bytes data = 2;
+    string id = 1;
+    string topic = 2;
+    bytes data = 3;
 }
 
 
