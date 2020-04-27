@@ -35,7 +35,7 @@ class ViewRouter: ObservableObject {
     }
 
     private static func initialPage() -> Page {
-        return Backend.shared.loggedIn() ? .masterDetail : .login
+        return Backend.shared.authenticator.loggedIn() ? .masterDetail : .login
     }
 
     let objectWillChange = PassthroughSubject<ViewRouter,Never>()

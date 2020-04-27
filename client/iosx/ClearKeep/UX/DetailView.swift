@@ -29,12 +29,8 @@ struct DetailView: View {
     }
 
     private func send() {
-        guard let payload = nextMessage.data(using: .utf8) else {
-            print("Could not stringify \(nextMessage)")
-            return
-        }
-        Backend.shared.sendToPeer(recipient: self.selectedRoom,
-                                  payload: payload) { success, error in
+        Backend.shared.send(nextMessage,
+                            to: self.selectedRoom) { success, error in
             print("DetailView sent: success=\(success), error=\(String(describing: error))")
         }
     }

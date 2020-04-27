@@ -34,7 +34,7 @@ struct LoginView : View {
     }
 
     func register() {
-        Backend.shared.register(username, password) { success, error in
+        Backend.shared.authenticator.register(username, password) { success, error in
             if success {
                 self.viewRouter.current = .masterDetail
             } else {
@@ -44,7 +44,7 @@ struct LoginView : View {
     }
 
     func login() {
-        Backend.shared.login(username, password) { success, error in
+        Backend.shared.authenticator.login(username, password) { success, error in
             if success {
                 self.viewRouter.current = .masterDetail
             } else {

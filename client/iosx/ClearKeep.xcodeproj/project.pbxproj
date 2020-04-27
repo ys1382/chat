@@ -21,6 +21,18 @@
 		76B4F4BB24419780004A177E /* Crypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76B4F4BA24419780004A177E /* Crypto.swift */; };
 		76B4F4BC24419780004A177E /* Crypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76B4F4BA24419780004A177E /* Crypto.swift */; };
 		76B4F4BF24424173004A177E /* TestBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76B4F4BD24424173004A177E /* TestBackend.swift */; };
+		76C499AA24516B1B0058FF66 /* Authenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C499A824516B1B0058FF66 /* Authenticator.swift */; };
+		76C499AB24516B1B0058FF66 /* Pscrud.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C499A924516B1B0058FF66 /* Pscrud.swift */; };
+		76C499AC245172760058FF66 /* Authenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C499A824516B1B0058FF66 /* Authenticator.swift */; };
+		76C499AD245172760058FF66 /* Authenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C499A824516B1B0058FF66 /* Authenticator.swift */; };
+		76C499AE2451727A0058FF66 /* Pscrud.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C499A924516B1B0058FF66 /* Pscrud.swift */; };
+		76C499AF2451727A0058FF66 /* Pscrud.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C499A924516B1B0058FF66 /* Pscrud.swift */; };
+		76C499B02451729C0058FF66 /* chat.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761121AE244CDBD600A1CCEE /* chat.pb.swift */; };
+		76C499B1245172A10058FF66 /* pscrud.grpc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761121AF244CDBD600A1CCEE /* pscrud.grpc.swift */; };
+		76C499B2245172A50058FF66 /* pscrud.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761121B0244CDBD600A1CCEE /* pscrud.pb.swift */; };
+		76C499B3245172D20058FF66 /* pscrud.grpc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761121AF244CDBD600A1CCEE /* pscrud.grpc.swift */; };
+		76C499B4245172D50058FF66 /* pscrud.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761121B0244CDBD600A1CCEE /* pscrud.pb.swift */; };
+		76C499B5245172D90058FF66 /* chat.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761121AE244CDBD600A1CCEE /* chat.pb.swift */; };
 		76C6F0A224385F50006D1559 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C6F0A124385F50006D1559 /* AppDelegate.swift */; };
 		76C6F0A424385F50006D1559 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C6F0A324385F50006D1559 /* SceneDelegate.swift */; };
 		76C6F0A824385F51006D1559 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76C6F0A724385F51006D1559 /* Assets.xcassets */; };
@@ -63,6 +75,8 @@
 		767B36102438690B00466D8D /* UX.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UX.swift; sourceTree = "<group>"; };
 		76B4F4BA24419780004A177E /* Crypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Crypto.swift; sourceTree = "<group>"; };
 		76B4F4BD24424173004A177E /* TestBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestBackend.swift; sourceTree = "<group>"; };
+		76C499A824516B1B0058FF66 /* Authenticator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Authenticator.swift; sourceTree = "<group>"; };
+		76C499A924516B1B0058FF66 /* Pscrud.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Pscrud.swift; sourceTree = "<group>"; };
 		76C6F09E24385F50006D1559 /* ClearKeep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClearKeep.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		76C6F0A124385F50006D1559 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		76C6F0A324385F50006D1559 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -153,6 +167,8 @@
 			isa = PBXGroup;
 			children = (
 				76C6F0D624386207006D1559 /* Backend.swift */,
+				76C499A824516B1B0058FF66 /* Authenticator.swift */,
+				76C499A924516B1B0058FF66 /* Pscrud.swift */,
 				76B4F4BA24419780004A177E /* Crypto.swift */,
 			);
 			path = Network;
@@ -375,11 +391,13 @@
 				76C6F0E124386207006D1559 /* MotherView.swift in Sources */,
 				76C6F0DE24386207006D1559 /* Backend.swift in Sources */,
 				767B36112438690B00466D8D /* UX.swift in Sources */,
+				76C499AB24516B1B0058FF66 /* Pscrud.swift in Sources */,
 				76C6F0DB24386207006D1559 /* DetailView.swift in Sources */,
 				76B4F4BB24419780004A177E /* Crypto.swift in Sources */,
 				76C6F0DC24386207006D1559 /* MasterView.swift in Sources */,
 				76C6F0A424385F50006D1559 /* SceneDelegate.swift in Sources */,
 				761121B2244CDBD600A1CCEE /* pscrud.grpc.swift in Sources */,
+				76C499AA24516B1B0058FF66 /* Authenticator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -387,11 +405,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				76C499B02451729C0058FF66 /* chat.pb.swift in Sources */,
+				76C499AE2451727A0058FF66 /* Pscrud.swift in Sources */,
 				76D9B70F244B6D230050A8D6 /* Backend.swift in Sources */,
 				76B4F4BC24419780004A177E /* Crypto.swift in Sources */,
 				76B4F4BF24424173004A177E /* TestBackend.swift in Sources */,
+				76C499B2245172A50058FF66 /* pscrud.pb.swift in Sources */,
 				76C6F0B924385F51006D1559 /* ClearKeepTests.swift in Sources */,
 				767B36122438690B00466D8D /* UX.swift in Sources */,
+				76C499B1245172A10058FF66 /* pscrud.grpc.swift in Sources */,
+				76C499AC245172760058FF66 /* Authenticator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -399,7 +422,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				76C499B5245172D90058FF66 /* chat.pb.swift in Sources */,
+				76C499B4245172D50058FF66 /* pscrud.pb.swift in Sources */,
+				76C499AF2451727A0058FF66 /* Pscrud.swift in Sources */,
+				76C499B3245172D20058FF66 /* pscrud.grpc.swift in Sources */,
 				760B6CBF243B05FD0075A6B7 /* Backend.swift in Sources */,
+				76C499AD245172760058FF66 /* Authenticator.swift in Sources */,
 				76C6F0C424385F51006D1559 /* ClearKeepUITests.swift in Sources */,
 				767B36132438690B00466D8D /* UX.swift in Sources */,
 			);
@@ -558,6 +586,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = telred.ClearKeep;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -577,6 +606,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = telred.ClearKeep;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;

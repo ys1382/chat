@@ -10,43 +10,60 @@ class Crypto {
     }
 
     struct KeySend {
+        let sequence: UInt64
         let signing: Curve25519.Signing.PublicKey?
         let agreement: Curve25519.KeyAgreement.PublicKey
     }
 
-    static let shared = Crypto()
+    static func signing(from data: Data) throws -> Curve25519.Signing.PublicKey {
+        return try Curve25519.Signing.PublicKey(rawRepresentation: data)
+    }
+
+    static func agreement(from data: Data) throws -> Curve25519.KeyAgreement.PublicKey {
+        return try Curve25519.KeyAgreement.PublicKey(rawRepresentation: data)
+    }
 
     func get(for recipient: String) -> KeySend {
+        sequence = sequence &+ 1
         if let key = keys[recipient] {
             let agreement = Curve25519.KeyAgreement.PrivateKey()
             keys[recipient]!.ourAgreement = agreement
-            return KeySend(signing: key.ourSigning.publicKey, agreement: agreement.publicKey)
+            return KeySend(sequence: sequence,
+                           signing: key.ourSigning.publicKey,
+                           agreement: agreement.publicKey)
         } else {
             let signing = Curve25519.Signing.PrivateKey()
             let agreement = Curve25519.KeyAgreement.PrivateKey()
-            keys[recipient] = KeySet(ourSigning: signing,
+            keys[recipient] = KeySet(sequence: sequence,
+                                     ourSigning: signing,
                                      ourAgreement: agreement,
                                      theirSigning: nil,
                                      theirAgreement: nil)
-            return KeySend(signing: signing.publicKey, agreement: agreement.publicKey)
+            return KeySend(sequence: sequence,
+                           signing: signing.publicKey,
+                           agreement: agreement.publicKey)
         }
     }
 
-    func set(_ keySend: KeySend, from sender: String) -> KeySend {
+    // returns false if this is a response to the handshake we sent
+    func set(_ keySend: KeySend, from sender: String) -> Bool {
         if let key = keys[sender] {
             keys[sender]!.theirSigning = keySend.signing ?? key.theirSigning
             keys[sender]!.theirAgreement = keySend.agreement
-            return KeySend(signing: key.ourSigning.publicKey,
-                           agreement: key.ourAgreement.publicKey)
+//            if key.sequence == keySend.sequence {
+                return false
+//            }
+//            keys[sender]!.sequence = sequence
         } else {
             let signing = Curve25519.Signing.PrivateKey()
             let agreement = Curve25519.KeyAgreement.PrivateKey()
-            keys[sender] = KeySet(ourSigning: signing,
+            keys[sender] = KeySet(sequence: sequence,
+                                  ourSigning: signing,
                                   ourAgreement: agreement,
                                   theirSigning: keySend.signing,
                                   theirAgreement: keySend.agreement)
-            return KeySend(signing: signing.publicKey, agreement: agreement.publicKey)
         }
+        return true
     }
 
     func encrypt(_ data: Data, for recipient: String) throws -> SealedMessage {
@@ -65,8 +82,11 @@ class Crypto {
     }
 
     // private
-    
+
+    var sequence: UInt64 = 0
+
     private struct KeySet {
+        var sequence: UInt64
         var ourSigning: Curve25519.Signing.PrivateKey
         var ourAgreement: Curve25519.KeyAgreement.PrivateKey
         var theirSigning: Curve25519.Signing.PublicKey?

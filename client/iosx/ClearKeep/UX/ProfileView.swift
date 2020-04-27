@@ -21,7 +21,7 @@ struct ProfileView: View {
     }
 
     private func logout() {
-        Backend.shared.logout() { success, error in
+        Backend.shared.authenticator.logout() { success, error in
             if success {
                 print("logged out")
             } else {
@@ -49,7 +49,7 @@ struct ProfileView: View {
     }
 
     private func delete() {
-        Backend.shared.deregister() { success, error in
+        Backend.shared.authenticator.deregister() { success, error in
             if success {
                 print("account deleted")
             } else {

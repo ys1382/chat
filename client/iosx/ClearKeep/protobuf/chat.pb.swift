@@ -29,11 +29,9 @@ struct Chat_Handshake {
 
   var from: String = String()
 
-  var to: String = String()
+  var signing: Data = SwiftProtobuf.Internal.emptyData
 
-  var signingKey: Data = SwiftProtobuf.Internal.emptyData
-
-  var agreementKey: Data = SwiftProtobuf.Internal.emptyData
+  var agreement: Data = SwiftProtobuf.Internal.emptyData
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -49,16 +47,87 @@ struct Chat_Envelope {
 
   var to: String = String()
 
-  var agreementKey: Data = SwiftProtobuf.Internal.emptyData
-
   var payload: Data = SwiftProtobuf.Internal.emptyData
-
-  var signature: Data = SwiftProtobuf.Internal.emptyData
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
 }
+
+struct Chat_Chit {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  var what: Chat_Chit.What = .handshake
+
+  var sequence: UInt64 = 0
+
+  var handshake: Chat_Handshake {
+    get {return _handshake ?? Chat_Handshake()}
+    set {_handshake = newValue}
+  }
+  /// Returns true if `handshake` has been explicitly set.
+  var hasHandshake: Bool {return self._handshake != nil}
+  /// Clears the value of `handshake`. Subsequent reads from it will return its default value.
+  mutating func clearHandshake() {self._handshake = nil}
+
+  var envelope: Chat_Envelope {
+    get {return _envelope ?? Chat_Envelope()}
+    set {_envelope = newValue}
+  }
+  /// Returns true if `envelope` has been explicitly set.
+  var hasEnvelope: Bool {return self._envelope != nil}
+  /// Clears the value of `envelope`. Subsequent reads from it will return its default value.
+  mutating func clearEnvelope() {self._envelope = nil}
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  enum What: SwiftProtobuf.Enum {
+    typealias RawValue = Int
+    case handshake // = 0
+    case envelope // = 1
+    case UNRECOGNIZED(Int)
+
+    init() {
+      self = .handshake
+    }
+
+    init?(rawValue: Int) {
+      switch rawValue {
+      case 0: self = .handshake
+      case 1: self = .envelope
+      default: self = .UNRECOGNIZED(rawValue)
+      }
+    }
+
+    var rawValue: Int {
+      switch self {
+      case .handshake: return 0
+      case .envelope: return 1
+      case .UNRECOGNIZED(let i): return i
+      }
+    }
+
+  }
+
+  init() {}
+
+  fileprivate var _handshake: Chat_Handshake? = nil
+  fileprivate var _envelope: Chat_Envelope? = nil
+}
+
+#if swift(>=4.2)
+
+extension Chat_Chit.What: CaseIterable {
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  static var allCases: [Chat_Chit.What] = [
+    .handshake,
+    .envelope,
+  ]
+}
+
+#endif  // swift(>=4.2)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
@@ -68,18 +137,16 @@ extension Chat_Handshake: SwiftProtobuf.Message, SwiftProtobuf._MessageImplement
   static let protoMessageName: String = _protobuf_package + ".Handshake"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "from"),
-    2: .same(proto: "to"),
-    3: .standard(proto: "signing_key"),
-    4: .standard(proto: "agreement_key"),
+    2: .same(proto: "signing"),
+    3: .same(proto: "agreement"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
       case 1: try decoder.decodeSingularStringField(value: &self.from)
-      case 2: try decoder.decodeSingularStringField(value: &self.to)
-      case 3: try decoder.decodeSingularBytesField(value: &self.signingKey)
-      case 4: try decoder.decodeSingularBytesField(value: &self.agreementKey)
+      case 2: try decoder.decodeSingularBytesField(value: &self.signing)
+      case 3: try decoder.decodeSingularBytesField(value: &self.agreement)
       default: break
       }
     }
@@ -89,23 +156,19 @@ extension Chat_Handshake: SwiftProtobuf.Message, SwiftProtobuf._MessageImplement
     if !self.from.isEmpty {
       try visitor.visitSingularStringField(value: self.from, fieldNumber: 1)
     }
-    if !self.to.isEmpty {
-      try visitor.visitSingularStringField(value: self.to, fieldNumber: 2)
+    if !self.signing.isEmpty {
+      try visitor.visitSingularBytesField(value: self.signing, fieldNumber: 2)
     }
-    if !self.signingKey.isEmpty {
-      try visitor.visitSingularBytesField(value: self.signingKey, fieldNumber: 3)
-    }
-    if !self.agreementKey.isEmpty {
-      try visitor.visitSingularBytesField(value: self.agreementKey, fieldNumber: 4)
+    if !self.agreement.isEmpty {
+      try visitor.visitSingularBytesField(value: self.agreement, fieldNumber: 3)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: Chat_Handshake, rhs: Chat_Handshake) -> Bool {
     if lhs.from != rhs.from {return false}
-    if lhs.to != rhs.to {return false}
-    if lhs.signingKey != rhs.signingKey {return false}
-    if lhs.agreementKey != rhs.agreementKey {return false}
+    if lhs.signing != rhs.signing {return false}
+    if lhs.agreement != rhs.agreement {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -116,9 +179,7 @@ extension Chat_Envelope: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "from"),
     2: .same(proto: "to"),
-    3: .standard(proto: "agreement_key"),
-    4: .same(proto: "payload"),
-    5: .same(proto: "signature"),
+    3: .same(proto: "payload"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -126,9 +187,7 @@ extension Chat_Envelope: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
       switch fieldNumber {
       case 1: try decoder.decodeSingularStringField(value: &self.from)
       case 2: try decoder.decodeSingularStringField(value: &self.to)
-      case 3: try decoder.decodeSingularBytesField(value: &self.agreementKey)
-      case 4: try decoder.decodeSingularBytesField(value: &self.payload)
-      case 5: try decoder.decodeSingularBytesField(value: &self.signature)
+      case 3: try decoder.decodeSingularBytesField(value: &self.payload)
       default: break
       }
     }
@@ -141,14 +200,8 @@ extension Chat_Envelope: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
     if !self.to.isEmpty {
       try visitor.visitSingularStringField(value: self.to, fieldNumber: 2)
     }
-    if !self.agreementKey.isEmpty {
-      try visitor.visitSingularBytesField(value: self.agreementKey, fieldNumber: 3)
-    }
     if !self.payload.isEmpty {
-      try visitor.visitSingularBytesField(value: self.payload, fieldNumber: 4)
-    }
-    if !self.signature.isEmpty {
-      try visitor.visitSingularBytesField(value: self.signature, fieldNumber: 5)
+      try visitor.visitSingularBytesField(value: self.payload, fieldNumber: 3)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -156,10 +209,62 @@ extension Chat_Envelope: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementa
   static func ==(lhs: Chat_Envelope, rhs: Chat_Envelope) -> Bool {
     if lhs.from != rhs.from {return false}
     if lhs.to != rhs.to {return false}
-    if lhs.agreementKey != rhs.agreementKey {return false}
     if lhs.payload != rhs.payload {return false}
-    if lhs.signature != rhs.signature {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
+}
+
+extension Chat_Chit: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".Chit"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "what"),
+    2: .same(proto: "sequence"),
+    3: .same(proto: "handshake"),
+    4: .same(proto: "envelope"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      switch fieldNumber {
+      case 1: try decoder.decodeSingularEnumField(value: &self.what)
+      case 2: try decoder.decodeSingularUInt64Field(value: &self.sequence)
+      case 3: try decoder.decodeSingularMessageField(value: &self._handshake)
+      case 4: try decoder.decodeSingularMessageField(value: &self._envelope)
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if self.what != .handshake {
+      try visitor.visitSingularEnumField(value: self.what, fieldNumber: 1)
+    }
+    if self.sequence != 0 {
+      try visitor.visitSingularUInt64Field(value: self.sequence, fieldNumber: 2)
+    }
+    if let v = self._handshake {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+    }
+    if let v = self._envelope {
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Chat_Chit, rhs: Chat_Chit) -> Bool {
+    if lhs.what != rhs.what {return false}
+    if lhs.sequence != rhs.sequence {return false}
+    if lhs._handshake != rhs._handshake {return false}
+    if lhs._envelope != rhs._envelope {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
+extension Chat_Chit.What: SwiftProtobuf._ProtoNameProviding {
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    0: .same(proto: "HANDSHAKE"),
+    1: .same(proto: "ENVELOPE"),
+  ]
 }

@@ -11,6 +11,9 @@ class Backend: ObservableObject {
 
     static let shared = Backend()
 
+    var authenticator: Authenticator
+    var pscrud: Pscrud
+
     @Published var rooms = [RoomModel]()
     @Published var messages = [PostModel]()
 
@@ -38,45 +41,13 @@ class Backend: ObservableObject {
         )
         connection = ClientConnection(configuration: configuration)
         client = Grpc_PscrudClient(channel: connection)
+
+        authenticator = Authenticator(client)
+        pscrud = Pscrud(client, authenticator)
     }
 
     deinit {
         try? group.syncShutdownGracefully()
-    }
-
-    func sendToPeer(recipient: String,
-                    payload: Data,
-                    _ completion: @escaping (Bool, Error?) -> Void) {
-
-        let envelope : Chat_Envelope = .with {
-            $0.from = username!
-            $0.to = recipient
-            $0.payload = payload
-        }
-        do {
-            let request : Grpc_PublishRequest = try .with {
-                $0.topic = recipient
-                $0.data = try envelope.serializedData()
-                $0.session = session!
-            }
-            client.publish(request).response.whenComplete { result in
-                switch result {
-                case .success(let response):
-                    if response.ok {
-                        Backend.log("Backend publish succeeded")
-                    } else {
-                        Backend.log("Backend publish failed")
-                        completion(false, nil)
-                    }
-                case .failure(let error):
-                    Backend.log("Backend publish error \(error)")
-                    completion(false, error)
-                }
-            }
-        } catch {
-            Backend.log("Backend publish error: \(error)")
-            completion(false, error)
-        }
     }
 
     func close() {
@@ -89,23 +60,43 @@ class Backend: ObservableObject {
         }
     }
 
+    func send(_ message: String,
+              to recipient: String,
+              _ completion: @escaping (Bool, Error?) -> Void) {
+
+        guard let payload = message.data(using: .utf8) else {
+            print("Could not datify \(message)")
+            completion(false, nil)
+            return
+        }
+        let envelope : Chat_Envelope = .with {
+            $0.from = authenticator.username!
+            $0.to = recipient
+            $0.payload = payload
+        }
+        let chit: Chat_Chit = .with {
+            $0.what = .envelope
+            $0.envelope = envelope
+        }
+        do {
+            let data = try chit.serializedData()
+            queue[recipient] = data
+            sendHandshake(to: recipient, completion)
+        } catch {
+            Backend.log("Backend send envelope error: \(error)")
+            completion(false, error)
+        }
+    }
+
     // private
 
     private let group: MultiThreadedEventLoopGroup
     private let client: Grpc_PscrudClient
     private let connection: ClientConnection
-    private static let key_username = "username"
+    private let crypto = Crypto()
+    private var queue: [String:Data] = [:]
 
-    private var username: String? {
-        get {
-            return UserDefaults.standard.string(forKey: Backend.key_username)
-        }
-        set (latest) {
-            UserDefaults.standard.set(latest, forKey: Backend.key_username)
-        }
-    }
-
-    private static func handleResult(_ result: Result<Grpc_Response, Error>,
+    internal static func handleResult(_ result: Result<Grpc_Response, Error>,
                              _ completion: @escaping (Bool, Error?) -> Void) {
         DispatchQueue.main.async {
             switch result {
@@ -116,209 +107,31 @@ class Backend: ObservableObject {
             }
         }
     }
-}
 
-extension Backend { // Authentication
-
-    var session: String? {
-        get {
-            return UserDefaults.standard.string(forKey: Backend.key_session)
-        }
-        set (latest) {
-            UserDefaults.standard.set(latest, forKey: Backend.key_session)
-        }
-    }
-
-    func loggedIn() -> Bool {
-        return (session?.isEmpty == false) && (username?.isEmpty == false)
-    }
-
-    func register(_ username: String,
-                  _ password: String,
-                  _ completion: @escaping (Bool, Error?) -> Void) {
-        authenticate(username, password, completion, submit: client.register)
-    }
-
-    func login(_ username: String,
-               _ password: String,
-               _ completion: @escaping (Bool, Error?) -> Void) {
-        authenticate(username, password, completion, submit: client.login)
-    }
-
-    func logout( _ completion: @escaping (Bool, Error?) -> Void) {
-        let request : Grpc_Request = .with {
-            $0.session = session!
-        }
-        self.session = nil
-        self.username = nil
-        client.logout(request).response.whenComplete { result in
-            Backend.handleResult(result, completion)
-        }
-    }
-
-    func deregister( _ completion: @escaping (Bool, Error?) -> Void) {
-        let request : Grpc_Request = .with {
-            $0.session = session!
-        }
-        client.deregister(request).response.whenComplete { result in
-            Backend.handleResult(result, completion)
-        }
-    }
-
-    // private
-
-    private static let key_session = "session"
-
-    // calls register or login
-    private func authenticate(_ username: String,
-                              _ password: String,
-                              _ completion: @escaping (Bool, Error?) -> Void,
-                              submit: @escaping (Grpc_AuthRequest, CallOptions?)
-                              -> UnaryCall<Grpc_AuthRequest, Grpc_AuthResponse>) {
-        let request : Grpc_AuthRequest = .with {
-            $0.username = username
-            $0.password = password
-        }
-        submit(request, nil).response.whenComplete { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let response):
-                    if response.ok {
-                        self.username = username
-                        self.authenticated(session: response.session,
-                                           completion)
-                    } else {
-                        self.nauthenticate(completion)
-                    }
-                case .failure(_):
-                    self.nauthenticate(completion)
-                }
-            }
-        }
-    }
-
-    func reauthenticate(_ completion: @escaping (Bool, Error?) -> Void) {
-        guard let session = session, let _ = username else {
-            self.nauthenticate(completion)
-            return
-        }
-        let request : Grpc_Request = .with {
-            $0.session = session
-        }
-        client.authenticate(request).response.whenComplete { result in
-            switch result {
-            case .success(let response):
-                if response.ok {
-                    self.authenticated(session: session,
-                                       completion)
-                } else {
-                    self.nauthenticate(completion)
-                }
-            case .failure(_):
-                self.nauthenticate(completion)
-            }
-        }
-    }
-
-    private func authenticated(session: String,
-                               _ completion: @escaping (Bool, Error?) -> Void) {
-        self.session = session
+    internal func authenticated(_ completion: @escaping (Bool, Error?) -> Void) {
         download(completion)
-        listen() { post in
+        pscrud.listen(heard: heard)
+        pscrud.subscribe(topic: authenticator.username!, completion)
+    }
+
+    private func heard(_ id: String, _ chit: Chat_Chit) {
+        switch chit.what {
+        case  .handshake:
+            print("Heard handshake")
+            receivedHandshake(chit.sequence, chit.handshake)
+            break
+        case .envelope:
+            print("Heard envelope")
+            let post = PostModel(id: id, envelope: chit.envelope)
+            Backend.log("received \(chit.envelope.payload)")
             self.messages.append(post)
-        }
-        subscribe(topic: username!, completion)
-    }
-
-    private func nauthenticate(_ completion: @escaping (Bool, Error?) -> Void) {
-        print("auth failed")
-        session = nil
-        username = nil
-        completion(false, nil)
-    }
-}
-
-// publish subscribe create read update delete
-extension Backend {
-
-//    private let client: Grpc_PscrudClient
-//    private let auth: Authentication
-    private static let key_publication = "publication"
-
-//    init(_ client: Grpc_PscrudClient, _ auth: Authentication) {
-//        self.client = client
-//        self.auth = auth
-//    }
-
-    func publish(topic: String,
-                 envelope : Chat_Envelope,
-                 _ completion: @escaping (Bool, Error?) -> Void) {
-        do {
-            let request : Grpc_PublishRequest = try .with {
-                $0.topic = topic
-                $0.data = try envelope.serializedData()
-                $0.session = session!
-            }
-            client.publish(request).response.whenComplete { result in
-                switch result {
-                case .success(let response):
-                    if response.ok {
-                        Backend.log("Backend publish succeeded")
-                    } else {
-                        Backend.log("Backend publish failed")
-                        completion(false, nil)
-                    }
-                case .failure(let error):
-                    Backend.log("Backend publish error \(error)")
-                    completion(false, error)
-                }
-            }
-        } catch {
-            Backend.log("Backend publish error: \(error)")
-            completion(false, error)
-        }
-    }
-
-    func subscribe(topic: String,
-                   _ completion: @escaping (Bool, Error?) -> Void) {
-        print("subscribe to \(topic)")
-        let request : Grpc_SubscribeRequest = .with {
-            $0.session = session!
-            $0.topic = topic
-        }
-        client.subscribe(request).response.whenComplete { result in
-            Backend.handleResult(result, completion)
-        }
-    }
-
-    // returns true if successfully listening
-    func listen(heard: @escaping (PostModel) -> Void) {
-        let request : Grpc_Request = .with {
-            $0.session = session!
-        }
-        DispatchQueue.global(qos: .background).async {
-            do {
-                let call = self.client.listen(request) { publication in
-                    guard let envelope = try? Chat_Envelope(serializedData: publication.data) else {
-                        Backend.log("Could not decode envelope")
-                        return
-                    }
-                    DispatchQueue.main.async {
-                        Backend.log("received \(envelope.payload)")
-                        let post = PostModel(id: publication.id, envelope: envelope)
-                        heard(post)
-                    }
-                }
-                let status = try call.status.wait()
-                Backend.log("listen finished: \(status)")
-            } catch {
-                Backend.log("listen error: \(error)")
-            }
+        case .UNRECOGNIZED(_):
+            Backend.log("Error: unrecognized chit")
         }
     }
 
     private func download(_ completion: @escaping (Bool, Error?) -> Void) {
-        storeLoad(key: Backend.key_publication) { success, data, error in
+        pscrud.storeLoad(key: Pscrud.key_publication) { success, data, error in
             guard success else {
                 completion(false, error)
                 return
@@ -328,44 +141,77 @@ extension Backend {
         }
     }
 
-    // CRUD
-
-    func storeCreate(key: String,
-                     data: Data,
-                     _ completion: @escaping (Bool, Error?) -> Void) {
-        let request : Grpc_PutRequest = .with {
-            $0.key = key
-            $0.data = data
-            $0.session = session!
-        }
-        client.create(request).response.whenComplete { result in
-            switch result {
-            case .success(let response):
-                completion(response.ok, nil)
-            case .failure(let error):
-                completion(false, error)
+    private func sendHandshake(to recipient: String,
+                               _ completion: @escaping (Bool, Error?) -> Void) {
+        print("Send handshake to \(recipient)")
+        let keySend = crypto.get(for: recipient)
+        let handshake : Chat_Handshake = .with {
+            $0.from = authenticator.username!
+            if let signing = keySend.signing?.rawRepresentation {
+                $0.signing = signing
             }
+            $0.agreement = keySend.agreement.rawRepresentation
+        }
+        let chit: Chat_Chit = .with {
+            $0.what = .handshake
+            $0.handshake = handshake
+        }
+        do {
+            let data = try chit.serializedData()
+            try send(data, to: recipient, completion)
+        } catch {
+            Backend.log("Backend send handshake error: \(error)")
+            completion(false, error)
+        }
+    }
+    
+    private func receivedHandshake(_ sequence: UInt64, _ handshake: Chat_Handshake) {
+        do {
+            let peer = handshake.from
+            print("Received handshake from \(peer)")
+
+            let signing = try Crypto.signing(from: handshake.signing)
+            let agreement = try Crypto.agreement(from: handshake.agreement)
+            let keySend = Crypto.KeySend(sequence: sequence,
+                                         signing: signing,
+                                         agreement: agreement)
+            if crypto.set(keySend, from: peer) {
+                sendHandshake(to: peer) { success, error in
+                    if !success {
+                        Backend.log("Error: failed to respond to handshake: \(String(describing: error))")
+                    }
+                }
+            }
+            if let data = queue[peer] {
+                try send(data, to: peer)
+                queue.removeValue(forKey: peer)
+            }
+        } catch {
+            Backend.log("Error: could not use handshake \(sequence) from \(handshake.from)")
         }
     }
 
-    func storeLoad(key: String,
-//                   skip: Int?,
-//                   limit: Int?,
-                   _ completion: @escaping (Bool, [Grpc_Datum], Error?) -> Void) {
-        let request : Grpc_GetRequest = .with {
-            $0.key = key
-//            if let skip = skip, let limit = limit {
-//                $0.skip = UInt32(skip)
-//                $0.limit = UInt32(limit)
-//            }
-            $0.session = session!
+    private func send(_ data: Data,
+                        to recipient: String,
+                        _ completion: ((Bool, Error?) -> Void)? = nil) throws {
+
+        let request : Grpc_PublishRequest = .with {
+            $0.topic = recipient
+            $0.data = data
+            $0.session = authenticator.session!
         }
-        client.read(request).response.whenComplete { result in
+        client.publish(request).response.whenComplete { result in
             switch result {
             case .success(let response):
-                completion(response.ok, response.data, nil)
+                if response.ok {
+                    Backend.log("Backend publish succeeded")
+                } else {
+                    Backend.log("Backend publish failed")
+                    completion?(false, nil)
+                }
             case .failure(let error):
-                completion(false, [], error)
+                Backend.log("Backend publish error \(error)")
+                completion?(false, error)
             }
         }
     }

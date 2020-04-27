@@ -7,15 +7,23 @@ package chat;
 
 message Handshake {
     string from = 1;
-    string to = 2;
-    bytes signing_key = 3;
-    bytes agreement_key = 4;
+    bytes signing = 2;
+    bytes agreement = 3;
 }
 
 message Envelope {
     string from = 1;
     string to = 2;
-    bytes agreement_key = 3;
-    bytes payload = 4;
-    bytes signature = 5;
+    bytes payload = 3;
+}
+
+message Chit {
+    enum What {
+        HANDSHAKE = 0;
+        ENVELOPE = 1;
+    }
+    What what = 1;
+    uint64 sequence = 2;
+    Handshake handshake = 3;
+    Envelope envelope = 4;
 }
