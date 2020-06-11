@@ -24,6 +24,7 @@ import androidx.ui.unit.ipx
 import androidx.ui.unit.sp
 import com.example.data.DataStore
 import com.example.model.Message
+import com.example.secure.CryptoHelper
 import com.example.ui.Screen
 import com.example.ui.navigateTo
 import com.google.protobuf.ByteString
@@ -198,9 +199,12 @@ fun HintEditText(
 }
 
 fun publish(grpcClient: PscrudGrpc.PscrudStub, topicName: String, message: String) {
-    messagesList.add(Message("", message = message))
+    val msgEncrypt = CryptoHelper.encrypt(message, topicName)
+    messagesList.add(Message("", message = msgEncrypt))
+    val msgDecrypt = CryptoHelper.decrypt(msgEncrypt, topicName)
+    messagesList.add(Message("", message = msgDecrypt))
 
-    val data = ByteString.copyFromUtf8(message)
+    val data = ByteString.copyFromUtf8(msgEncrypt)
 
     val request = PscrudOuterClass.PublishRequest.newBuilder()
         .setTopic(topicName)
@@ -212,6 +216,7 @@ fun publish(grpcClient: PscrudGrpc.PscrudStub, topicName: String, message: Strin
         override fun onNext(response: PscrudOuterClass.Response?) {
             response?.ok?.let { isSuccessful ->
                 if (isSuccessful) {
+
 //                    messagesList.add(Message("", message = message))
                 }
             }
