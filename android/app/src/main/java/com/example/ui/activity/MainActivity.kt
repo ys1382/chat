@@ -2,6 +2,7 @@ package com.example.ui.activity
 
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.Handler
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
 import androidx.ui.animation.Crossfade
@@ -30,8 +31,8 @@ import grpc.PscrudGrpc
 class MainActivity : AppCompatActivity() {
 
     lateinit var grpcClient: PscrudGrpc.PscrudStub
-    lateinit var sharedPreferences : SharedPreferences
-
+    lateinit var sharedPreferences: SharedPreferences
+    lateinit var mainThreadHandler: Handler
     val rooms = mutableListOf<Room>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,10 +41,10 @@ class MainActivity : AppCompatActivity() {
         val appContainer = (application as MyApplication).container
         grpcClient = appContainer.grpcClient
         sharedPreferences = appContainer.sharedPreferences
+        mainThreadHandler = appContainer.mainThreadHandler
 
+        listen(grpcClient,mainThreadHandler)
         subscribe(grpcClient, DataStore.username)
-        listen(grpcClient)
-
         setContent {
             DrawerAppComponent()
         }
@@ -54,10 +55,10 @@ class MainActivity : AppCompatActivity() {
         Crossfade(ChatStatus.currentScreen) { screen ->
             Surface(color = MaterialTheme.colors.background) {
                 when (screen) {
-                    is Screen.Home -> HomeView(rooms,this,sharedPreferences)
-                    is Screen.HomeView2 -> HomeView2(this,sharedPreferences)
+                    is Screen.Home -> HomeView(rooms, this, sharedPreferences)
+                    is Screen.HomeView2 -> HomeView2(this, sharedPreferences)
                     is Screen.CreateNewRoom -> CreateNewRoom(rooms)
-                    is Screen.RoomDetail -> RoomDetail(screen.roomId, grpcClient)
+                    is Screen.RoomDetail -> RoomDetail(screen.roomId, grpcClient,mainThreadHandler)
                 }
             }
         }

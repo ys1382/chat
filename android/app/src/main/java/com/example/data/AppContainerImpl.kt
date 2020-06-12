@@ -2,6 +2,8 @@ package com.example.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Handler
+import android.os.Looper
 import grpc.PscrudGrpc
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +15,7 @@ import kotlinx.coroutines.asExecutor
 interface AppContainer {
     val grpcClient: PscrudGrpc.PscrudStub
     val sharedPreferences: SharedPreferences
+    val mainThreadHandler: Handler
 }
 
 /**
@@ -31,7 +34,11 @@ class AppContainerImpl(context: Context) : AppContainer {
         PscrudGrpc.newStub(channel)
     }
 
-    override val sharedPreferences : SharedPreferences by lazy {
+    override val sharedPreferences: SharedPreferences by lazy {
         context.getSharedPreferences("CK_SHARED_PREF", Context.MODE_PRIVATE)
+    }
+
+    override val mainThreadHandler: Handler by lazy {
+        Handler(Looper.getMainLooper())
     }
 }
