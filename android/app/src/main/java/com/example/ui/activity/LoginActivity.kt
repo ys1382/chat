@@ -3,6 +3,8 @@ package com.example.myapplication
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.Handler
+import android.os.Message
 import android.text.TextUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -38,15 +40,15 @@ import io.grpc.stub.StreamObserver
 class LoginActivity : AppCompatActivity() {
 
     lateinit var grpcClient: PscrudGrpc.PscrudStub
-    lateinit var sharedPreferences : SharedPreferences
-
+    lateinit var sharedPreferences: SharedPreferences
+    lateinit var mainThreadHandler: Handler
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val appContainer = (application as MyApplication).container
         grpcClient = appContainer.grpcClient
         sharedPreferences = appContainer.sharedPreferences
-
+        mainThreadHandler = appContainer.mainThreadHandler
         val session = sharedPreferences.getString(DataStore.USER_SESSION, "")
         val username = sharedPreferences.getString(DataStore.USERNAME, "")
         if (!session.isNullOrBlank() && !username.isNullOrBlank()) {
@@ -102,9 +104,11 @@ class LoginActivity : AppCompatActivity() {
                         },
                         modifier = Modifier.padding(16.dp) + Modifier.weight(1f)
                     ) {
-                        Text(text = "Login",
+                        Text(
+                            text = "Login",
                             color = Color.Blue,
-                            modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 8.dp))
+                            modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 8.dp)
+                        )
                     }
 
                     OutlinedButton(
@@ -165,19 +169,13 @@ class LoginActivity : AppCompatActivity() {
                     if (isSuccessful) {
                         onLoginSuccessful(response.session, username)
                     } else {
-                        Toast.makeText(this@LoginActivity,
-                            "Username or password is invalid",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        onShowMsg("Something went wrong")
                     }
                 }
             }
 
             override fun onError(t: Throwable?) {
-                Toast.makeText(this@LoginActivity,
-                    "Something went wrong",
-                    Toast.LENGTH_SHORT
-                ).show()
+                onShowMsg("Something went wrong")
             }
 
             override fun onCompleted() {
@@ -194,22 +192,17 @@ class LoginActivity : AppCompatActivity() {
         grpcClient.register(request, object : StreamObserver<PscrudOuterClass.AuthResponse> {
             override fun onNext(response: PscrudOuterClass.AuthResponse?) {
                 response?.ok?.let { isSuccessful ->
-                    if (isSuccessful){
+                    if (isSuccessful) {
                         onLoginSuccessful(response.session, username)
                     } else {
-                        Toast.makeText(this@LoginActivity,
-                            "Something went wrong",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        onShowMsg("Something went wrong")
+
                     }
                 }
             }
 
             override fun onError(t: Throwable?) {
-                Toast.makeText(this@LoginActivity,
-                    "Something went wrong",
-                    Toast.LENGTH_SHORT
-                ).show()
+                onShowMsg("Something went wrong")
             }
 
             override fun onCompleted() {
@@ -227,6 +220,12 @@ class LoginActivity : AppCompatActivity() {
         DataStore.username = username
         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
         finish()
+    }
+
+    fun onShowMsg(message: String) {
+        mainThreadHandler.post {
+            Toast.makeText(this@LoginActivity, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     @Preview
