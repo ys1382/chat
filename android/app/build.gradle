@@ -5,6 +5,7 @@ plugins {
     id 'kotlin-kapt'
     id 'com.google.protobuf'
     id 'idea'
+//    id 'com.amazonaws.appsync'
 }
 repositories {
     jcenter()
@@ -75,7 +76,7 @@ protobuf {
         }
     }
 }
-def grpcVersion = '1.27.1'
+def grpcVersion = '1.29.0'
 
 dependencies {
 
@@ -103,6 +104,8 @@ dependencies {
     implementation("io.grpc:grpc-protobuf-lite:$grpcVersion") {
         exclude module: "protobuf-lite"
     }
+    implementation 'org.whispersystems:curve25519-java:0.5.0'
+    implementation 'org.bouncycastle:bcprov-jdk15on:1.56'
 
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
