@@ -48,8 +48,9 @@ class LoginActivity : AppCompatActivity() {
         sharedPreferences = appContainer.sharedPreferences
 
         val session = sharedPreferences.getString(DataStore.USER_SESSION, "")
-        if (!session.isNullOrBlank()) {
-            onLoginSuccessful(session)
+        val username = sharedPreferences.getString(DataStore.USERNAME, "")
+        if (!session.isNullOrBlank() && !username.isNullOrBlank()) {
+            onLoginSuccessful(session = session, username = username)
         }
 
         setContent {
@@ -162,7 +163,7 @@ class LoginActivity : AppCompatActivity() {
             override fun onNext(response: PscrudOuterClass.AuthResponse?) {
                 response?.ok?.let { isSuccessful ->
                     if (isSuccessful) {
-                        onLoginSuccessful(response.session)
+                        onLoginSuccessful(response.session, username)
                     } else {
                         Toast.makeText(this@LoginActivity,
                             "Username or password is invalid",
@@ -194,7 +195,7 @@ class LoginActivity : AppCompatActivity() {
             override fun onNext(response: PscrudOuterClass.AuthResponse?) {
                 response?.ok?.let { isSuccessful ->
                     if (isSuccessful){
-                        onLoginSuccessful(response.session)
+                        onLoginSuccessful(response.session, username)
                     } else {
                         Toast.makeText(this@LoginActivity,
                             "Something went wrong",
@@ -216,9 +217,14 @@ class LoginActivity : AppCompatActivity() {
         })
     }
 
-    fun onLoginSuccessful(session: String) {
-        sharedPreferences.edit().putString(DataStore.USER_SESSION, session).apply()
+    fun onLoginSuccessful(session: String, username: String) {
+        sharedPreferences.edit().apply {
+            putString(DataStore.USER_SESSION, session)
+            putString(DataStore.USERNAME, username)
+            apply()
+        }
         DataStore.session = session
+        DataStore.username = username
         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
         finish()
     }
