@@ -18,14 +18,12 @@ import androidx.ui.material.icons.filled.Menu
 import androidx.ui.res.loadVectorResource
 import androidx.ui.tooling.preview.Preview
 import com.example.application.MyApplication
+import com.example.data.DataStore
 import com.example.demojetpackcompose.R
 import com.example.model.Room
 import com.example.ui.ChatStatus
 import com.example.ui.Screen
-import com.example.ui.home.CreateNewRoom
-import com.example.ui.home.HomeView
-import com.example.ui.home.HomeView2
-import com.example.ui.home.RoomDetail
+import com.example.ui.home.*
 import com.example.ui.navigateTo
 import grpc.PscrudGrpc
 
@@ -42,6 +40,9 @@ class MainActivity : AppCompatActivity() {
         val appContainer = (application as MyApplication).container
         grpcClient = appContainer.grpcClient
         sharedPreferences = appContainer.sharedPreferences
+
+        subscribe(grpcClient, DataStore.username)
+        listen(grpcClient)
 
         setContent {
             DrawerAppComponent()

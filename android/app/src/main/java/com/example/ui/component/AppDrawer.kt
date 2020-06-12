@@ -78,7 +78,11 @@ fun AppDrawer(
                     },
                     confirmButton = {
                         Button(onClick = {
-                            sharedPreferences.edit().putString(DataStore.USER_SESSION, "").apply()
+                            sharedPreferences.edit().apply {
+                                putString(DataStore.USER_SESSION, "")
+                                putString(DataStore.USERNAME, "")
+                                apply()
+                            }
                             openDialogLogout.value = false
                             stateCloseActivity.value = true
                         }) {

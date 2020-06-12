@@ -22,15 +22,19 @@ import androidx.ui.unit.TextUnit
 import androidx.ui.unit.dp
 import androidx.ui.unit.ipx
 import androidx.ui.unit.sp
+import chat.Chat
 import com.example.data.DataStore
 import com.example.model.Message
 import com.example.secure.CryptoHelper
 import com.example.ui.Screen
 import com.example.ui.navigateTo
 import com.google.protobuf.ByteString
+import djb.Curve25519
 import grpc.PscrudGrpc
 import grpc.PscrudOuterClass
 import io.grpc.stub.StreamObserver
+import net.vrallev.android.ecc.Ecc25519Helper
+import net.vrallev.android.ecc.KeyHolder
 
 private var messagesList = ModelList<Message>()
 
@@ -39,7 +43,6 @@ fun RoomDetail(
     roomId: String,
     grpcClient: PscrudGrpc.PscrudStub
 ) {
-
     Column(modifier = Modifier.fillMaxWidth()) {
         TopAppBar(
             title = {
@@ -204,7 +207,23 @@ fun publish(grpcClient: PscrudGrpc.PscrudStub, topicName: String, message: Strin
     val msgDecrypt = CryptoHelper.decrypt(msgEncrypt, topicName)
     messagesList.add(Message("", message = msgDecrypt))
 
-    val data = ByteString.copyFromUtf8(msgEncrypt)
+    val byteArr =  "My random seed".toByteArray()
+    val privateKey = KeyHolder.createPrivateKey(byteArr)
+    val keyHolder = KeyHolder.createPrivateKey(privateKey)
+    val helper = Ecc25519Helper(keyHolder)
+
+    val handshake = Chat.Handshake.newBuilder()
+        .setFrom(DataStore.username)
+        .setAgreement(ByteString.copyFromUtf8(""))
+        .setSigning(ByteString.copyFromUtf8(""))
+        .build()
+
+    val chit = Chat.Chit.newBuilder()
+        .setWhat(Chat.Chit.What.HANDSHAKE)
+        .setHandshake(handshake)
+        .build()
+
+    val data = chit.toByteString()
 
     val request = PscrudOuterClass.PublishRequest.newBuilder()
         .setTopic(topicName)
@@ -216,10 +235,26 @@ fun publish(grpcClient: PscrudGrpc.PscrudStub, topicName: String, message: Strin
         override fun onNext(response: PscrudOuterClass.Response?) {
             response?.ok?.let { isSuccessful ->
                 if (isSuccessful) {
-
 //                    messagesList.add(Message("", message = message))
                 }
             }
+        }
+
+        override fun onError(t: Throwable?) {
+        }
+
+        override fun onCompleted() {
+        }
+    })
+}
+
+fun listen(grpcClient: PscrudGrpc.PscrudStub) {
+    val request = PscrudOuterClass.Request.newBuilder()
+        .setSession(DataStore.session)
+        .build()
+
+    grpcClient.listen(request, object : StreamObserver<PscrudOuterClass.Publication> {
+        override fun onNext(value: PscrudOuterClass.Publication?) {
         }
 
         override fun onError(t: Throwable?) {

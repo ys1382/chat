@@ -104,6 +104,9 @@ dependencies {
         exclude module: "protobuf-lite"
     }
 
+    implementation 'net.vrallev.ecc:ecc-25519-android:1.0.3' 	// Android
+    implementation 'net.vrallev.ecc:ecc-25519-java:1.0.3'
+
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
