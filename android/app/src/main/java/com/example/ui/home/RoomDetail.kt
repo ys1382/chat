@@ -1,6 +1,7 @@
 package com.example.ui.home
 
 import android.os.Handler
+import android.util.Log
 import androidx.compose.Composable
 import androidx.compose.frames.ModelList
 import androidx.compose.state
@@ -39,6 +40,8 @@ import java.nio.charset.StandardCharsets
 
 
 private var messagesList = ModelList<Message>()
+private var recipient = ""
+private var messageMap = mutableMapOf<String, String>()
 
 @Composable
 fun RoomDetail(
@@ -46,6 +49,7 @@ fun RoomDetail(
     grpcClient: PscrudGrpc.PscrudStub,
     mainThreadHandler : Handler
 ) {
+    recipient = roomId
     Column(modifier = Modifier.fillMaxWidth()) {
         TopAppBar(
             title = {
@@ -218,7 +222,7 @@ fun publish(grpcClient: PscrudGrpc.PscrudStub, topicName: String, message: Strin
         .build()
 
     val chit = Chat.Chit.newBuilder()
-        .setWhat(Chat.Chit.What.HANDSHAKE)
+        .setWhat(Chat.Chit.What.ENVELOPE)
         .setHandshake(handshake)
         .build()
 
@@ -255,8 +259,60 @@ fun listen(grpcClient: PscrudGrpc.PscrudStub,mainThreadHandler:Handler) {
     grpcClient.listen(request, object : StreamObserver<PscrudOuterClass.Publication> {
         override fun onNext(value: PscrudOuterClass.Publication?) {
             val chit = Chat.Chit.parseFrom(value?.data)
-            mainThreadHandler.post{
-                messagesList.add(Message("", chit.envelope.payload.toStringUtf8()))
+
+            Log.d("ChatGrpc", "Type: " + chit.what)
+            Log.d("ChatGrpc", "Payload: " + chit.envelope.payload.toStringUtf8())
+
+            when(chit.what) {
+                Chat.Chit.What.HANDSHAKE ->
+                    sendHandshake(grpcClient, recipient = recipient, handshake = chit.handshake)
+                Chat.Chit.What.ENVELOPE -> {
+                    mainThreadHandler.post {
+                        messagesList.add(Message("", chit.envelope.payload.toStringUtf8()))
+                    }
+                }
+            }
+        }
+
+        override fun onError(t: Throwable?) {
+        }
+
+        override fun onCompleted() {
+        }
+    })
+}
+
+private fun sendHandshake(grpcClient: PscrudGrpc.PscrudStub, recipient: String, handshake: Chat.Handshake) {
+    Log.d("ChatGrpc", "Send handshake to $recipient")
+
+    val byteArr = recipient.toByteArray()
+    val privateKey = KeyHolder.createPrivateKey(byteArr)
+    val keyHolder = KeyHolder.createPrivateKey(privateKey)
+    val helper = Ecc25519Helper(keyHolder)
+
+    val handshake = Chat.Handshake.newBuilder()
+        .setFrom(DataStore.username)
+        .setAgreement(ByteString.copyFrom(helper.keyHolder.publicKeyDiffieHellman))
+        .setSigning(ByteString.copyFrom(helper.keyHolder.publicKeySignature))
+        .build()
+
+    val chit = Chat.Chit.newBuilder()
+        .setWhat(Chat.Chit.What.HANDSHAKE)
+        .setHandshake(handshake)
+        .build()
+
+    val data = chit.toByteString()
+
+    val request = PscrudOuterClass.PublishRequest.newBuilder()
+        .setTopic(recipient)
+        .setSession(DataStore.session)
+        .setData(data)
+        .build()
+
+    grpcClient.publish(request, object : StreamObserver<PscrudOuterClass.Response> {
+        override fun onNext(response: PscrudOuterClass.Response?) {
+            response?.ok?.let { isSuccessful ->
+                Log.d("ChatGrpc", "Send handshake: " + isSuccessful)
             }
         }
 
