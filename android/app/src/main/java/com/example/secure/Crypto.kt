@@ -1,6 +1,10 @@
 package com.example.secure
 
+import android.util.Log
+import chat.Chat
+import com.google.protobuf.ByteString
 import net.vrallev.android.ecc.Ecc25519Helper
+import net.vrallev.android.ecc.KeyHolder
 
 
 object Crypto {
@@ -22,37 +26,56 @@ object Crypto {
         return keys.get(id)
     }
 
+    fun signing(data: Chat.Handshake): ByteString {
+        return data.signing
+    }
+
+    fun agreement(data: Chat.Handshake): ByteString {
+        return data.agreement
+    }
+
+
     // returns false if this is a response to the handshake we sent
     fun set(keySend: KeySend, sender: String): Boolean {
         val key = getKeySet(sender)
-
         if (key != null) {
-//            key.theirSigning = keySend.signing ?? key.theirSigning
+            if (null != keySend.signing) {
+                key.theirSigning = keySend.signing
+            } else {
+                key.theirSigning = key.theirSigning
+            }
             key.theirAgreement = keySend.agreement
 //            if key.sequence == keySend.sequence {
             return false
 //            }
 //            keys[sender]!.sequence = sequence
         } else {
-            val helper = Ecc25519Helper()
+            val byteArr = sender.toByteArray()
+            val privateKey = KeyHolder.createPrivateKey(byteArr)
+            val keyHolder = KeyHolder(privateKey)
+            val helper = Ecc25519Helper(keyHolder)
+
             keys[sender] = KeySet(
                 helper.keyHolder.publicKeySignature,
                 helper.keyHolder.publicKeyDiffieHellman,
-                keySend.signing, keySend.agreement
+                keySend.signing,
+                keySend.agreement
             )
         }
         return true
     }
 
-    fun getKeySend(recipient: String): KeySend {
+    fun get(recipient: String): KeySend {
         val key = keys[recipient]
-        val helper = Ecc25519Helper()
-        val agreement = helper.keyHolder.publicKeySignature
         if (null != key) {
-
-            key.ourAgreement = agreement
-            return KeySend(key.ourSigning, agreement)
+            return KeySend(key.ourSigning, key.ourAgreement)
         } else {
+            val byteArr = recipient.toByteArray()
+            val privateKey = KeyHolder.createPrivateKey(byteArr)
+            val keyHolder = KeyHolder(privateKey)
+            val helper = Ecc25519Helper(keyHolder)
+
+            val agreement = helper.keyHolder.publicKeySignature
             val signing = helper.keyHolder.privateKey
             keys[recipient] = KeySet(signing, agreement, null, null)
             return KeySend(signing, agreement)

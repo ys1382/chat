@@ -2,7 +2,10 @@ package com.example.ui
 
 import android.app.Activity
 import android.content.Context
+import android.os.Handler
 import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
+import androidx.compose.Composable
 import androidx.ui.graphics.Color
 
 // Models
@@ -89,3 +92,10 @@ val colors = listOf(
     Color(0xFFe3ffd9.toInt()),
     Color(0xFFd0fff8.toInt())
 )
+
+@Composable
+fun showMessage(activity: Activity, message: String, mainThreadHandler: Handler) {
+    mainThreadHandler.post {
+//        Toast.makeText(@App, message, Toast.LENGTH_SHORT).show()
+    }
+}
