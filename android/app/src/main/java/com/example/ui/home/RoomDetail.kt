@@ -44,7 +44,7 @@ import java.nio.charset.StandardCharsets
 
 private var messagesList = ModelList<Message>()
 private var recipient = ""
-private var listMsg = mutableMapOf<String, ByteString>()
+private var listMsg = mutableMapOf<String, Chat.Chit>()
 
 @Composable
 fun RoomDetail(
@@ -137,10 +137,7 @@ fun previewScreen() {
                 ) {
                     MessageAdapter()
                 }
-
                 Row() {
-                    var message: String = ""
-
                     Surface(
                         color = Color.LightGray,
                         modifier = Modifier.padding(8.dp) +
@@ -211,12 +208,11 @@ fun HintEditText(
     return state.value.text
 }
 
-
+// Listener message from sender
 fun listen(grpcClient: PscrudGrpc.PscrudStub, mainThreadHandler: Handler) {
     val request = PscrudOuterClass.Request.newBuilder()
         .setSession(DataStore.session)
         .build()
-
     grpcClient.listen(request, object : StreamObserver<PscrudOuterClass.Publication> {
         override fun onNext(value: PscrudOuterClass.Publication?) {
             if (null != value)
@@ -237,16 +233,22 @@ private fun hear(
     grpcClient: PscrudGrpc.PscrudStub,
     mainThreadHandler: Handler
 ) {
-    Log.d("ChatGrpc", "Type: " + chit.what)
-    Log.d("ChatGrpc", "Payload: " + chit.envelope.payload.toStringUtf8())
-
     when (chit.what) {
-        Chat.Chit.What.HANDSHAKE ->
+        Chat.Chit.What.HANDSHAKE -> {
             receivedHandshake(chit.handshake, grpcClient, mainThreadHandler)
+        }
         Chat.Chit.What.ENVELOPE -> {
             mainThreadHandler.post {
-                messagesList.add(Message("", chit.envelope.payload.toStringUtf8()))
+                messagesList.add(
+                    Message(
+                        id,
+                        chit.envelope.from + " : " + chit.envelope.payload.toStringUtf8()
+                    )
+                )
             }
+        }
+        Chat.Chit.What.UNRECOGNIZED -> {
+
         }
     }
 }
@@ -316,7 +318,7 @@ fun sendMsg(
         .setEnvelope(envelope)
         .build()
     try {
-        listMsg.put("1", chit.toByteString())
+        listMsg.put(recipient, chit)
         sendHandshake(grpcClient, recipient, mainThreadHandler)
     } catch (e: Exception) {
     }
@@ -359,15 +361,18 @@ private fun sendData(
 
     grpcClient.publish(request, object : StreamObserver<PscrudOuterClass.Response> {
         override fun onNext(response: PscrudOuterClass.Response?) {
+            Log.d("MSG", response?.ok.toString())
             response?.ok?.let { isSuccessful ->
-                Log.d("ChatGrpc", "Send handshake: " + isSuccessful)
+
             }
         }
 
         override fun onError(t: Throwable?) {
+            Log.d("MSG", "onError")
         }
 
         override fun onCompleted() {
+            Log.d("MSG", "onCompleted")
         }
     })
 
@@ -381,11 +386,35 @@ private fun receivedHandshake(
     val signing = Crypto.signing(handshake)
     val agreement = Crypto.agreement(handshake)
     val keySend = Crypto.KeySend(signing.toByteArray(), agreement.toByteArray())
-    if (Crypto.set(keySend, peer)) {
-        sendHandshake(grpcClient, peer, mainThreadHandler)
-    }
+
     try {
-        listMsg.get("1")?.let { sendData(grpcClient, peer, it, mainThreadHandler) }
+        if (listMsg.size == 0) {
+            Log.d("FFF", "1111");
+            sendHandshake(grpcClient, peer, mainThreadHandler)
+        } else {
+            Log.d("FFF", "1111");
+            if (Crypto.set(keySend, peer)) {
+                sendHandshake(grpcClient, peer, mainThreadHandler)
+            }
+
+            listMsg.get(peer)?.let {
+                // Sen data
+                sendData(grpcClient, peer, it.toByteString(), mainThreadHandler)
+                // update message of sender to UI
+                mainThreadHandler.post {
+                    messagesList.add(
+                        Message(
+                            peer,
+                            it.envelope.from + " : " + it.envelope.payload.toStringUtf8()
+                        )
+                    )
+                }
+                // Remove message sended
+                listMsg.remove(peer)
+            }
+        }
+
+
     } catch (e: java.lang.Exception) {
     }
 }

@@ -22,6 +22,7 @@ import androidx.ui.text.style.TextAlign
 import androidx.ui.tooling.preview.Preview
 import androidx.ui.unit.dp
 import androidx.ui.unit.sp
+import com.example.data.DataStore
 import com.example.demojetpackcompose.R
 import com.example.model.Room
 import com.example.ui.Screen
@@ -46,7 +47,7 @@ fun HomeView(
         },
         topAppBar = {
             TopAppBar(
-                title = { Text(text = "Rooms") },
+                title = { Text(text = "Rooms with acc: " + DataStore.username) },
                 navigationIcon = {
                     IconButton(onClick = { scaffoldState.drawerState = DrawerState.Opened }) {
                         Icon(asset = Icons.Filled.Menu)
