@@ -1,58 +1,82 @@
 package com.example.secure
 
-import android.util.Base64
-import android.util.Log
-import java.nio.charset.StandardCharsets
-import java.util.*
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
+import chat.Chat
+import com.google.crypto.tink.subtle.X25519
+import com.google.protobuf.ByteString
+import net.vrallev.android.ecc.Ecc25519Helper
+import net.vrallev.android.ecc.KeyHolder
 
 
-class CryptoHelper {
-    companion object{
-    private val key = "passwo"
-    private val CIPHER_ALGORITHM = "AES/CBC/PKCS7Padding";
-    var iv = ByteArray(16)
-    fun test() {
-        val value = "Hello Jetpack of Việt Nam Team"
-        val enC = encrypt(value, key)
-        val deC = decrypt(enC, key)
-        Log.e("Sucurity", "Enc : $enC")
-        Log.e("Sucurity", "DyC : $deC")
+object CryptoHelper {
+    val keys = mutableMapOf<String, KeySet>()
+
+    data class KeySend(
+        var signing: ByteArray?, //Curve25519.Signing.PublicKey?
+        var agreement: ByteArray //Curve25519.KeyAgreement.PublicKey
+    )
+
+    data class KeySet(
+        var ourSigning: ByteArray,  //Signing.PrivateKey
+        var ourAgreement: ByteArray, //KeyAgreement.PrivateKey
+        var theirSigning: ByteArray?, //Signing.PublicKey?
+        var theirAgreement: ByteArray? //KeyAgreement.PublicKey?
+    )
+
+    fun getKeySet(id: String): KeySet? {
+        return keys.get(id)
     }
 
-    fun encrypt(message: String, key: String): String {
-        val srcBuff = message.toByteArray(charset("UTF8"))
-        val skeySpec = getKey(key)
-        val ivSpec = IvParameterSpec(iv)
-        val ecipher = Cipher.getInstance(CIPHER_ALGORITHM)
-        ecipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec)
-        val dstBuff = ecipher.doFinal(srcBuff)
-        return Base64.encodeToString(dstBuff, Base64.DEFAULT)
+    fun signing(data: Chat.Handshake): ByteString {
+        return data.signing
+    }
+
+    fun agreement(data: Chat.Handshake): ByteString {
+        return data.agreement
     }
 
 
-    fun decrypt(encrypted: String, key: String): String {
-        val skeySpec = getKey(key)
-        val ivSpec = IvParameterSpec(iv)
-        val ecipher = Cipher.getInstance(CIPHER_ALGORITHM)
-        ecipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec)
-        val raw =
-            Base64.decode(encrypted, Base64.DEFAULT)
-        val originalBytes = ecipher.doFinal(raw)
-        return String(originalBytes, StandardCharsets.UTF_8)
+    // returns false if this is a response to the handshake we sent
+    fun set(keySend: KeySend, sender: String): Boolean {
+        val key = getKeySet(sender)
+        if (key != null) {
+            if (null != keySend.signing) {
+                key.theirSigning = keySend.signing
+            } else {
+                key.theirSigning = key.theirSigning
+            }
+            key.theirAgreement = keySend.agreement
+//            if key.sequence == keySend.sequence {
+            return false
+//            }
+//            keys[sender]!.sequence = sequence
+        } else {
+            val privateKey = X25519.generatePrivateKey();
+            val publishKey = X25519.publicFromPrivate(privateKey);
+
+            keys[sender] = KeySet(
+                privateKey,
+                publishKey,
+                keySend.signing,
+                keySend.agreement
+            )
+        }
+        return true
     }
 
-    private fun getKey(Key: String): SecretKeySpec {
-        val keyLength = 256
-        val keyBytes = ByteArray(keyLength / 8)
-        Arrays.fill(keyBytes, 0x0.toByte())
-        val passwordBytes: ByteArray = Key.toByteArray(StandardCharsets.UTF_8)
-        val length = Math.min(passwordBytes.size, keyBytes.size)
-        System.arraycopy(passwordBytes, 0, keyBytes, 0, length)
-        return SecretKeySpec(keyBytes, "AES")
+    fun get(recipient: String): KeySend {
+        val key = keys[recipient]
+        if (null != key) {
+            return KeySend(key.ourSigning, key.ourAgreement)
+        } else {
+            val privateKey = X25519.generatePrivateKey()
+            val publishKey = X25519.publicFromPrivate(privateKey);
+
+            keys[recipient] = KeySet(privateKey, publishKey, null, null)
+            return KeySend(privateKey, publishKey)
+        }
     }
 
-}
+    fun getSecretKey(keySet: KeySet): ByteArray? {
+        return X25519.computeSharedSecret(keySet.ourSigning, keySet.theirAgreement)
+    }
 }

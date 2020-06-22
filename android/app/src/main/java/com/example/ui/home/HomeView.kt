@@ -28,11 +28,13 @@ import com.example.model.Room
 import com.example.ui.Screen
 import com.example.ui.component.AppDrawer
 import com.example.ui.navigateTo
+import com.google.crypto.tink.Aead
 
 @Composable
 fun HomeView(
     rooms: List<Room>, activity: Activity,
     sharedPreferences : SharedPreferences,
+    aead : Aead,
     scaffoldState: ScaffoldState = remember { ScaffoldState() }
 ) {
     Scaffold(

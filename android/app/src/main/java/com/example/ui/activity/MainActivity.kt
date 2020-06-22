@@ -26,6 +26,7 @@ import com.example.ui.ChatStatus
 import com.example.ui.Screen
 import com.example.ui.home.*
 import com.example.ui.navigateTo
+import com.google.crypto.tink.Aead
 import grpc.PscrudGrpc
 
 class MainActivity : AppCompatActivity() {
@@ -33,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var grpcClient: PscrudGrpc.PscrudStub
     lateinit var sharedPreferences: SharedPreferences
     lateinit var mainThreadHandler: Handler
+    lateinit var aead: Aead
     val rooms = mutableListOf<Room>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,8 +44,8 @@ class MainActivity : AppCompatActivity() {
         grpcClient = appContainer.grpcClient
         sharedPreferences = appContainer.sharedPreferences
         mainThreadHandler = appContainer.mainThreadHandler
-
-        listen(grpcClient,mainThreadHandler)
+        aead = appContainer.aead
+        listen(grpcClient, mainThreadHandler,aead)
         subscribe(grpcClient, DataStore.username)
         setContent {
             DrawerAppComponent()
@@ -55,13 +57,15 @@ class MainActivity : AppCompatActivity() {
         Crossfade(ChatStatus.currentScreen) { screen ->
             Surface(color = MaterialTheme.colors.background) {
                 when (screen) {
-                    is Screen.Home -> HomeView(rooms, this, sharedPreferences)
+                    is Screen.Home -> HomeView(rooms, this, sharedPreferences,aead)
                     is Screen.HomeView2 -> HomeView2(this, sharedPreferences)
                     is Screen.CreateNewRoom -> CreateNewRoom(rooms)
-                    is Screen.RoomDetail -> RoomDetail(screen.roomId, grpcClient,mainThreadHandler)
+                    is Screen.RoomDetail -> RoomDetail(screen.roomId, grpcClient, mainThreadHandler)
                 }
             }
         }
     }
+
+
 }
 

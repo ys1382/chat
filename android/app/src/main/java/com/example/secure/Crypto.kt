@@ -1,6 +1,5 @@
 package com.example.secure
 
-import android.util.Log
 import chat.Chat
 import com.google.protobuf.ByteString
 import net.vrallev.android.ecc.Ecc25519Helper
@@ -81,4 +80,5 @@ object Crypto {
             return KeySend(signing, agreement)
         }
     }
+
 }
