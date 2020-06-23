@@ -24,7 +24,7 @@ class MyApplication : Application() {
         super.onCreate()
         container = AppContainerImpl(applicationContext)
         aead = try {
-            TinkConfig.register();
+            Config.register(TinkConfig.TINK_1_0_0)
             orGenerateNewKeysetHandle.getPrimitive(Aead::class.java)
         } catch (e: GeneralSecurityException) {
             throw RuntimeException(e)
