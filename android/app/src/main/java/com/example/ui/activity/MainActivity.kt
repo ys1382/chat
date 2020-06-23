@@ -44,7 +44,8 @@ class MainActivity : AppCompatActivity() {
         grpcClient = appContainer.grpcClient
         sharedPreferences = appContainer.sharedPreferences
         mainThreadHandler = appContainer.mainThreadHandler
-        aead = appContainer.aead
+        aead = (application as MyApplication).aead!!
+
         listen(grpcClient, mainThreadHandler,aead)
         subscribe(grpcClient, DataStore.username)
         setContent {

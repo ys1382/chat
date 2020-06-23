@@ -4,18 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
-import com.google.crypto.tink.Aead
-import com.google.crypto.tink.Config
-import com.google.crypto.tink.KeysetHandle
-import com.google.crypto.tink.aead.AeadKeyTemplates
-import com.google.crypto.tink.config.TinkConfig
-import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import grpc.PscrudGrpc
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
-import java.io.IOException
-import java.security.GeneralSecurityException
 
 
 /**
@@ -25,7 +17,7 @@ interface AppContainer {
     val grpcClient: PscrudGrpc.PscrudStub
     val sharedPreferences: SharedPreferences
     val mainThreadHandler: Handler
-    var aead: Aead
+
 }
 
 /**
@@ -51,28 +43,6 @@ class AppContainerImpl(context: Context) : AppContainer {
         Handler(Looper.getMainLooper())
     }
 
-    val orGen : KeysetHandle by lazy {
-        AndroidKeysetManager.Builder()
-            .withSharedPref(context, TINK_KEYSET_NAME, PREF_FILE_NAME)
-            .withKeyTemplate(AeadKeyTemplates.AES256_GCM)
-            .withMasterKeyUri(MASTER_KEY_URI)
-            .build()
-            .keysetHandle
-    }
-
-    override var aead = try {
-        Config.register(TinkConfig.TINK_1_0_0)
-        orGen.getPrimitive(Aead::class.java)
-    } catch (e: GeneralSecurityException) {
-        throw RuntimeException(e)
-    } catch (e: IOException) {
-        throw RuntimeException(e)
-    }
-    companion object {
-        private const val PREF_FILE_NAME = "hello_world_pref"
-        private const val TINK_KEYSET_NAME = "hello_world_keyset"
-        private const val MASTER_KEY_URI = "android-keystore://hello_world_master_key"
-    }
 }
 
 

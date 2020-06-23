@@ -40,15 +40,10 @@ object CryptoHelper {
         val key = getKeySet(sender)
         if (key != null) {
             if (null != keySend.signing) {
-                key.theirSigning = keySend.signing
-            } else {
-                key.theirSigning = key.theirSigning
+                keys[sender]!!.theirSigning = keySend.signing
             }
-            key.theirAgreement = keySend.agreement
-//            if key.sequence == keySend.sequence {
+            keys[sender]!!.theirAgreement = keySend.agreement
             return false
-//            }
-//            keys[sender]!.sequence = sequence
         } else {
             val privateKey = X25519.generatePrivateKey();
             val publishKey = X25519.publicFromPrivate(privateKey);
@@ -63,11 +58,12 @@ object CryptoHelper {
         return true
     }
 
-    fun get(recipient: String): KeySend {
+    fun getKeySendTo(recipient: String): KeySend {
         val key = keys[recipient]
         if (null != key) {
             return KeySend(key.ourSigning, key.ourAgreement)
         } else {
+            // Generate my KeyPair
             val privateKey = X25519.generatePrivateKey()
             val publishKey = X25519.publicFromPrivate(privateKey);
 
