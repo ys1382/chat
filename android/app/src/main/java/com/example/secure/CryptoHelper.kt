@@ -5,6 +5,7 @@ import com.google.crypto.tink.subtle.X25519
 import com.google.protobuf.ByteString
 import net.vrallev.android.ecc.Ecc25519Helper
 import net.vrallev.android.ecc.KeyHolder
+import java.util.*
 
 
 object CryptoHelper {
@@ -38,7 +39,7 @@ object CryptoHelper {
     // returns false if this is a response to the handshake we sent
     fun set(keySend: KeySend, sender: String): Boolean {
         val key = getKeySet(sender)
-        if (key != null) {
+        if (key != null ) {
             if (null != keySend.signing) {
                 keys[sender]!!.theirSigning = keySend.signing
             }

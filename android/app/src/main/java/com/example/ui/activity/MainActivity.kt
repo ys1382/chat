@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
                     is Screen.Home -> HomeView(rooms, this, sharedPreferences,aead)
                     is Screen.HomeView2 -> HomeView2(this, sharedPreferences)
                     is Screen.CreateNewRoom -> CreateNewRoom(rooms)
-                    is Screen.RoomDetail -> RoomDetail(screen.roomId, grpcClient, mainThreadHandler)
+                    is Screen.RoomDetail -> RoomDetail(screen.roomId, grpcClient, mainThreadHandler,aead)
                 }
             }
         }

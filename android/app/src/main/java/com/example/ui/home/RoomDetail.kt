@@ -33,6 +33,7 @@ import com.example.secure.CryptoHelper
 import com.example.ui.Screen
 import com.example.ui.navigateTo
 import com.google.crypto.tink.Aead
+import com.google.crypto.tink.subtle.X25519
 import com.google.gson.Gson
 import com.google.protobuf.ByteString
 import grpc.PscrudGrpc
@@ -50,7 +51,7 @@ private var listMsg = mutableMapOf<String, Chat.Chit>()
 fun RoomDetail(
     roomId: String,
     grpcClient: PscrudGrpc.PscrudStub,
-    mainThreadHandler: Handler
+    mainThreadHandler: Handler, aead : Aead
 ) {
     recipient = roomId
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -94,7 +95,7 @@ fun RoomDetail(
                     Button(
                         modifier = Modifier.padding(8.dp),
                         onClick = {
-                            sendMsg(grpcClient, message, roomId, mainThreadHandler)
+                            sendMsg(grpcClient, message, roomId, mainThreadHandler,aead)
                         }
                     ) {
                         Text(
@@ -242,21 +243,29 @@ private fun hear(
                 val keySet = CryptoHelper.getKeySet(chit.envelope.from)
                 val secret = keySet?.let {
                     CryptoHelper.getSecretKey(it)
-
                 }
-
+                val secret2 = keySet?.let {
+                     X25519.computeSharedSecret(keySet.theirSigning, keySet.ourAgreement)
+                }
                 try {
-                    val data = chit.envelope.payload.toStringUtf8()
+//                    val pStr =
+//                        ByteString.copyFromUtf8("Im Here")
+//
+//                    val ciphertext =aead.encrypt(pStr.toByteArray(), secret)
+//
+//                    val textEnCrypt = ByteString.copyFromUtf8(base64Encode(ciphertext))
+
+                    val data = base64Decode(chit.envelope.payload.toStringUtf8())
                     Log.e("Enc", "TEXT2 " + data)
-                    Log.e("Enc", "keySet2: " + Gson().toJson(secret))
+                    Log.e("Enc", "keySet2: " + Gson().toJson(keySet))
 
-//                    val strDecr = aead.decrypt(base64Decode(data), secret)
+                    val strDecr = aead.decrypt(data, secret)
 
-//                    val text2 = String(strDecr, StandardCharsets.UTF_8)
+                    val text2 = String(strDecr, StandardCharsets.UTF_8)
                     messagesList.add(
                         Message(
                             id,
-                            chit.envelope.from + " : " + data
+                            chit.envelope.from + " : " + text2
                         )
                     )
                 } catch (e: Exception) {
@@ -319,7 +328,7 @@ fun sendMsg(
     grpcClient: PscrudGrpc.PscrudStub,
     message: String,
     recipient: String,
-    mainThreadHandler: Handler
+    mainThreadHandler: Handler, aead : Aead
 ) {
     val payload = message.apply {
         if (TextUtils.isEmpty(message)) {
@@ -338,7 +347,7 @@ fun sendMsg(
         .build()
     try {
         listMsg.put(recipient, chit)
-        sendHandshake(grpcClient, recipient, mainThreadHandler)
+        sendHandshake(grpcClient, recipient, mainThreadHandler,aead)
     } catch (e: Exception) {
     }
 }
@@ -346,9 +355,15 @@ fun sendMsg(
 private fun sendHandshake(
     grpcClient: PscrudGrpc.PscrudStub,
     recipient: String,
-    mainThreadHandler: Handler
+    mainThreadHandler: Handler, aead : Aead
 ) {
+    if (CryptoHelper.getKeySet(recipient) != null) {
+        Log.e("Enc", "Send :Message imtermadiate")
+        sendMessage(recipient, grpcClient, mainThreadHandler, aead)
+        return
+    }
     val keySend = CryptoHelper.getKeySendTo(recipient)
+    Log.e("Enc", "sendHandshake " + Gson().toJson(keySend.signing))
     val handshake = Chat.Handshake.newBuilder()
         .setFrom(DataStore.username)
         .setSigning(ByteString.copyFrom(keySend.signing))
@@ -369,7 +384,7 @@ private fun sendConfirmHandshake(
     grpcClient: PscrudGrpc.PscrudStub,
     keyConfirm: CryptoHelper.KeySend,
     senderID: String,
-    mainThreadHandler: Handler
+    mainThreadHandler: Handler, aead: Aead
 ) {
     val handshake = Chat.Handshake.newBuilder()
         .setFrom(DataStore.username)
@@ -381,10 +396,44 @@ private fun sendConfirmHandshake(
         .setHandshake(handshake)
         .build()
     try {
-        sendData(grpcClient, senderID, chit.toByteString(), mainThreadHandler)
+        sendDataAfterHandshake(grpcClient, senderID, chit.toByteString(), mainThreadHandler, aead)
     } catch (e: Exception) {
 
     }
+}
+
+private fun sendDataAfterHandshake(
+    grpcClient: PscrudGrpc.PscrudStub,
+    recipient: String,
+    data: ByteString,
+    mainThreadHandler: Handler, aead: Aead
+) {
+
+    val request = PscrudOuterClass.PublishRequest.newBuilder()
+        .setTopic(recipient)
+        .setSession(DataStore.session)
+        .setData(data)
+        .build()
+
+    grpcClient.publish(request, object : StreamObserver<PscrudOuterClass.Response> {
+        override fun onNext(response: PscrudOuterClass.Response?) {
+            Log.d("Enc", response?.ok.toString())
+            response?.ok?.let { isSuccessful ->
+                mainThreadHandler.post {
+                    sendMessage(recipient, grpcClient, mainThreadHandler, aead)
+                }
+            }
+        }
+
+        override fun onError(t: Throwable?) {
+            Log.d("Enc", "onError")
+        }
+
+        override fun onCompleted() {
+            Log.d("Enc", "onCompleted")
+        }
+    })
+
 }
 
 private fun sendData(
@@ -402,18 +451,15 @@ private fun sendData(
 
     grpcClient.publish(request, object : StreamObserver<PscrudOuterClass.Response> {
         override fun onNext(response: PscrudOuterClass.Response?) {
-            Log.d("MSG", response?.ok.toString())
             response?.ok?.let { isSuccessful ->
 
             }
         }
 
         override fun onError(t: Throwable?) {
-            Log.d("MSG", "onError")
         }
 
         override fun onCompleted() {
-            Log.d("MSG", "onCompleted")
         }
     })
 
@@ -429,52 +475,57 @@ private fun receivedHandshake(
     val agreement = CryptoHelper.agreement(handshake)
     val keySendConfirm = CryptoHelper.KeySend(signing.toByteArray(), agreement.toByteArray())
     try {
-        if (listMsg.size == 0) {
-            //For receive message
-            CryptoHelper.set(keySendConfirm, peer)
-            sendConfirmHandshake(grpcClient, keySendConfirm, peer, mainThreadHandler)
+        //for send a message
+        Log.e("Enc", "peer: " + peer)
+        if (CryptoHelper.set(keySendConfirm, peer)) {
+            val getKeySetFromServeice = CryptoHelper.getKeySet(peer)
+            val keySendFromReciver = CryptoHelper.KeySend(getKeySetFromServeice!!.ourSigning, getKeySetFromServeice.ourAgreement)
+            Log.e("Enc", "Send :RECEIVE " + Gson().toJson(signing.toByteArray()))
+            sendConfirmHandshake(grpcClient, keySendFromReciver, peer, mainThreadHandler, aead)
         } else {
-            //for send a message
-            if (CryptoHelper.set(keySendConfirm, peer)) {
-                sendConfirmHandshake(grpcClient, keySendConfirm, peer, mainThreadHandler)
-            }
-            val keySet = CryptoHelper.getKeySet(peer)
-            listMsg.get(peer)?.let {
-                val msg = aead.encrypt(
-                    it.envelope.payload.toByteArray(), CryptoHelper.getSecretKey(keySet!!)
-                )
-                Log.e("Enc", "TEXT1 " + base64Encode(msg))
-                Log.e("Enc", "keySet1: " + Gson().toJson(CryptoHelper.getSecretKey(keySet)))
-
-                val envelope = Chat.Envelope.newBuilder().setFrom(DataStore.username)
-                    .setPayload(ByteString.copyFromUtf8(base64Encode(msg)))
-                    .setTo(recipient)
-                    .build()
-
-                val chit = Chat.Chit.newBuilder().setWhat(Chat.Chit.What.ENVELOPE)
-                    .setEnvelope(envelope)
-                    .build()
-
-                // Sen data
-                sendData(grpcClient, peer, chit.toByteString(), mainThreadHandler)
-                // update message of sender to UI
-                mainThreadHandler.post {
-                    messagesList.add(
-                        Message(
-                            peer,
-                            it.envelope.from + " : " + it.envelope.payload.toStringUtf8()
-                        )
-                    )
-                }
-                // Remove message sended
-                listMsg.remove(peer)
-            }
+            Log.e("Enc", "Send :Message ")
+            sendMessage(peer, grpcClient, mainThreadHandler, aead)
         }
-
 
     } catch (e: java.lang.Exception) {
     }
+}
 
+private fun sendMessage(
+    peer: String, grpcClient: PscrudGrpc.PscrudStub,
+    mainThreadHandler: Handler, aead: Aead
+) {
+    val keySet = CryptoHelper.getKeySet(peer)
+    listMsg.get(peer)?.let {
+        val msg = aead.encrypt(
+            it.envelope.payload.toByteArray(), CryptoHelper.getSecretKey(keySet!!)
+        )
+        Log.e("Enc", "TEXT1 " + base64Encode(msg))
+        Log.e("Enc", "keySet1: " + Gson().toJson(keySet))
+
+        val envelope = Chat.Envelope.newBuilder().setFrom(DataStore.username)
+            .setPayload(ByteString.copyFromUtf8(base64Encode(msg)))
+            .setTo(peer)
+            .build()
+
+        val chit = Chat.Chit.newBuilder().setWhat(Chat.Chit.What.ENVELOPE)
+            .setEnvelope(envelope)
+            .build()
+
+        // Sen data
+        sendData(grpcClient, peer, chit.toByteString(), mainThreadHandler)
+        // update message of sender to UI
+        mainThreadHandler.post {
+            messagesList.add(
+                Message(
+                    peer,
+                    it.envelope.from + " : " + it.envelope.payload.toStringUtf8()
+                )
+            )
+        }
+        // Remove message sended
+        listMsg.remove(peer)
+    }
 }
 
 private fun base64Encode(input: ByteArray): String {
