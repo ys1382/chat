@@ -3,6 +3,7 @@ package com.example.ui
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
+import android.util.Base64
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.compose.Composable
@@ -98,4 +99,12 @@ fun showMessage(activity: Activity, message: String, mainThreadHandler: Handler)
     mainThreadHandler.post {
 //        Toast.makeText(@App, message, Toast.LENGTH_SHORT).show()
     }
+}
+
+fun base64Encode(input: ByteArray): String {
+    return Base64.encodeToString(input, Base64.DEFAULT)
+}
+
+fun base64Decode(input: String): ByteArray {
+    return Base64.decode(input, Base64.DEFAULT)
 }

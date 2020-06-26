@@ -34,7 +34,6 @@ import com.google.crypto.tink.Aead
 fun HomeView(
     rooms: List<Room>, activity: Activity,
     sharedPreferences : SharedPreferences,
-    aead : Aead,
     scaffoldState: ScaffoldState = remember { ScaffoldState() }
 ) {
     Scaffold(
