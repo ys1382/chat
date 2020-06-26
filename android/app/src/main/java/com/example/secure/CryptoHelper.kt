@@ -35,11 +35,19 @@ object CryptoHelper {
         return data.agreement
     }
 
+    fun checkHandShaked(id: String): Boolean {
+        val keyset = getKeySet(id)
+        if (keyset != null && keyset.theirAgreement != null) {
+            return true
+        }
+        return false
+    }
+
 
     // returns false if this is a response to the handshake we sent
     fun set(keySend: KeySend, sender: String): Boolean {
         val key = getKeySet(sender)
-        if (key != null ) {
+        if (key != null) {
             if (null != keySend.signing) {
                 keys[sender]!!.theirSigning = keySend.signing
             }

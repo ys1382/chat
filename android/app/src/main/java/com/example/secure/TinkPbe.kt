@@ -16,22 +16,23 @@ import javax.crypto.spec.PBEKeySpec
 
 object TinkPbe {
     val PW = "Password".toCharArray()
-
     @Throws(GeneralSecurityException::class, IOException::class)
-    fun encrypt(plaintextString: String): String {
+    fun encrypt(plaintextString: String,secretKey: ByteArray?): String {
         val keyByte = pbkdf2()
         val valueString = buildValue(keyByte)
         val jsonKeyString = writeJson(valueString)
         val keysetHandleOwn =
             CleartextKeysetHandle.read(JsonKeysetReader.withString(jsonKeyString))
         val aead = AeadFactory.getPrimitive(keysetHandleOwn)
-        val ciphertextByte =
-            aead.encrypt(plaintextString.toByteArray(), null) // no aad-data
+        val ciphertextByte = aead.encrypt(
+            plaintextString.toByteArray(StandardCharsets.UTF_8),
+            null
+        ) // no aad-data
         return base64Encode(ciphertextByte)
     }
 
     @Throws(GeneralSecurityException::class, IOException::class)
-    fun decrypt(ciphertextString: String): String {
+    fun decrypt(ciphertextString: String?, secretKey: ByteArray?): String {
         val keyByte = pbkdf2()
         val valueString = buildValue(keyByte)
         val jsonKeyString = writeJson(valueString)
@@ -41,7 +42,7 @@ object TinkPbe {
         val aead = AeadFactory.getPrimitive(keysetHandleOwn)
         // verschlüsselung
         val plaintextByte =
-            aead.decrypt(base64Decode(ciphertextString), null) // no aad-data
+            aead.decrypt(base64Decode(ciphertextString!!), null) // no aad-data
         return String(plaintextByte, StandardCharsets.UTF_8)
     }
 
@@ -52,12 +53,9 @@ object TinkPbe {
     )
     private fun pbkdf2(): ByteArray {
         val passwordSaltByte = ByteArray(16)
-        val PBKDF2_ITERATIONS = 1000 // anzahl der iterationen, höher = besser = langsamer
-        val SALT_SIZE_BYTE = 256 // grösse des salts, sollte so groß wie der hash sein
-        val HASH_SIZE_BYTE =
-            256 // größe das hashes bzw. gehashten passwortes, 128 byte = 512 bit
-        var passwordHashByte =
-            ByteArray(HASH_SIZE_BYTE) // das array nimmt das gehashte passwort auf
+        val PBKDF2_ITERATIONS = 100
+        val HASH_SIZE_BYTE = 256
+        var passwordHashByte = ByteArray(HASH_SIZE_BYTE)
         val spec = PBEKeySpec(
             PW,
             passwordSaltByte,
