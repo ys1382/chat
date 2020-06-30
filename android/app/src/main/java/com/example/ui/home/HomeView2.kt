@@ -2,6 +2,7 @@ package com.example.ui.home
 
 import android.app.Activity
 import android.content.SharedPreferences
+import android.os.Handler
 import androidx.compose.Composable
 import androidx.compose.remember
 import androidx.ui.core.Modifier
@@ -22,14 +23,16 @@ import androidx.ui.text.TextStyle
 import androidx.ui.text.style.TextAlign
 import androidx.ui.unit.dp
 import androidx.ui.unit.sp
+import com.example.db.UserRepository
 import com.example.demojetpackcompose.R
 import com.example.ui.*
 import com.example.ui.component.AppDrawer
+import grpc.PscrudGrpc
 
 @Composable
 fun HomeView2(
     activity: Activity,
-    sharedPreferences: SharedPreferences,
+    dbLocal: UserRepository, grpcClient: PscrudGrpc.PscrudStub, mainThreadHandler: Handler,
     scaffoldState: ScaffoldState = remember { ScaffoldState() }
 ) {
     Scaffold(
@@ -39,7 +42,7 @@ fun HomeView2(
                 currentScreen = Screen.HomeView2,
                 closeDrawer = { scaffoldState.drawerState = DrawerState.Closed },
                 activity = activity,
-                sharedPreferences = sharedPreferences
+                dbLocal = dbLocal, grpcClient = grpcClient, mainThreadHandler = mainThreadHandler
             )
         },
         topAppBar = {

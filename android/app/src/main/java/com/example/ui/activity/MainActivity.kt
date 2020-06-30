@@ -1,39 +1,27 @@
 package com.example.ui.activity
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
 import androidx.ui.animation.Crossfade
 import androidx.ui.core.setContent
-import androidx.ui.foundation.Icon
-import androidx.ui.foundation.Image
-import androidx.ui.foundation.Text
-import androidx.ui.material.IconButton
 import androidx.ui.material.MaterialTheme
 import androidx.ui.material.Surface
-import androidx.ui.material.TopAppBar
-import androidx.ui.material.icons.Icons
-import androidx.ui.material.icons.filled.Menu
-import androidx.ui.res.loadVectorResource
-import androidx.ui.tooling.preview.Preview
 import com.example.application.MyApplication
 import com.example.data.DataStore
-import com.example.demojetpackcompose.R
+import com.example.db.UserRepository
 import com.example.model.Room
 import com.example.ui.ChatStatus
 import com.example.ui.Screen
 import com.example.ui.home.*
-import com.example.ui.navigateTo
-import com.google.crypto.tink.Aead
 import grpc.PscrudGrpc
 
 class MainActivity : AppCompatActivity() {
 
     lateinit var grpcClient: PscrudGrpc.PscrudStub
-    lateinit var sharedPreferences: SharedPreferences
     lateinit var mainThreadHandler: Handler
+    lateinit var dbLocal: UserRepository
     val rooms = mutableListOf<Room>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,8 +29,8 @@ class MainActivity : AppCompatActivity() {
 
         val appContainer = (application as MyApplication).container
         grpcClient = appContainer.grpcClient
-        sharedPreferences = appContainer.sharedPreferences
         mainThreadHandler = appContainer.mainThreadHandler
+        dbLocal =appContainer.dbLocal
         listen(grpcClient, mainThreadHandler)
         subscribe(grpcClient, DataStore.username)
         setContent {
@@ -55,8 +43,8 @@ class MainActivity : AppCompatActivity() {
         Crossfade(ChatStatus.currentScreen) { screen ->
             Surface(color = MaterialTheme.colors.background) {
                 when (screen) {
-                    is Screen.Home -> HomeView(rooms, this, sharedPreferences)
-                    is Screen.HomeView2 -> HomeView2(this, sharedPreferences)
+                    is Screen.Home -> HomeView(rooms, this, dbLocal,grpcClient,mainThreadHandler)
+                    is Screen.HomeView2 -> HomeView2(this, dbLocal,grpcClient,mainThreadHandler)
                     is Screen.CreateNewRoom -> CreateNewRoom(rooms)
                     is Screen.RoomDetail -> RoomDetail(screen.roomId, grpcClient, mainThreadHandler)
                 }

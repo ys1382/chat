@@ -3,10 +3,6 @@ package com.example.secure
 import chat.Chat
 import com.google.crypto.tink.subtle.X25519
 import com.google.protobuf.ByteString
-import net.vrallev.android.ecc.Ecc25519Helper
-import net.vrallev.android.ecc.KeyHolder
-import java.util.*
-
 
 object CryptoHelper {
     val keys = mutableMapOf<String, KeySet>()

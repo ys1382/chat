@@ -26,7 +26,7 @@ object TinkPbe {
         val aead = AeadFactory.getPrimitive(keysetHandleOwn)
         val ciphertextByte = aead.encrypt(
             plaintextString.toByteArray(StandardCharsets.UTF_8),
-            null
+            secretKey
         ) // no aad-data
         return base64Encode(ciphertextByte)
     }
@@ -42,7 +42,7 @@ object TinkPbe {
         val aead = AeadFactory.getPrimitive(keysetHandleOwn)
         // verschlüsselung
         val plaintextByte =
-            aead.decrypt(base64Decode(ciphertextString!!), null) // no aad-data
+            aead.decrypt(base64Decode(ciphertextString!!), secretKey) // no aad-data
         return String(plaintextByte, StandardCharsets.UTF_8)
     }
 
@@ -55,17 +55,14 @@ object TinkPbe {
         val passwordSaltByte = ByteArray(16)
         val PBKDF2_ITERATIONS = 100
         val HASH_SIZE_BYTE = 256
-        var passwordHashByte = ByteArray(HASH_SIZE_BYTE)
         val spec = PBEKeySpec(
             PW,
             passwordSaltByte,
             PBKDF2_ITERATIONS,
             HASH_SIZE_BYTE
         )
-        val skf =
-            SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
-        passwordHashByte = skf.generateSecret(spec).encoded
-        return passwordHashByte
+        val skf =SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
+        return skf.generateSecret(spec).encoded
     }
 
     private fun buildValue(gcmKeyByte: ByteArray): String {

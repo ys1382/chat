@@ -2,6 +2,7 @@ package com.example.ui.home
 
 import android.app.Activity
 import android.content.SharedPreferences
+import android.os.Handler
 import androidx.compose.*
 import androidx.ui.core.Modifier
 import androidx.ui.foundation.*
@@ -23,17 +24,19 @@ import androidx.ui.tooling.preview.Preview
 import androidx.ui.unit.dp
 import androidx.ui.unit.sp
 import com.example.data.DataStore
+import com.example.db.UserRepository
 import com.example.demojetpackcompose.R
 import com.example.model.Room
 import com.example.ui.Screen
 import com.example.ui.component.AppDrawer
 import com.example.ui.navigateTo
 import com.google.crypto.tink.Aead
+import grpc.PscrudGrpc
 
 @Composable
 fun HomeView(
     rooms: List<Room>, activity: Activity,
-    sharedPreferences : SharedPreferences,
+    dbLocal: UserRepository, grpcClient: PscrudGrpc.PscrudStub,mainThreadHandler: Handler,
     scaffoldState: ScaffoldState = remember { ScaffoldState() }
 ) {
     Scaffold(
@@ -43,7 +46,8 @@ fun HomeView(
                 currentScreen = Screen.Home,
                 closeDrawer = { scaffoldState.drawerState = DrawerState.Closed },
                 activity = activity,
-                sharedPreferences = sharedPreferences
+                dbLocal = dbLocal,
+                grpcClient=grpcClient,mainThreadHandler = mainThreadHandler
             )
         },
         topAppBar = {

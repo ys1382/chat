@@ -2,9 +2,11 @@ package com.example.ui.component
 
 import android.app.Activity
 import android.content.Intent
-import android.content.SharedPreferences
+import android.os.Handler
+import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.Composable
+import androidx.compose.MutableState
 import androidx.compose.state
 import androidx.core.content.ContextCompat.startActivity
 import androidx.ui.core.Modifier
@@ -17,18 +19,24 @@ import androidx.ui.material.*
 import androidx.ui.res.stringResource
 import androidx.ui.res.vectorResource
 import androidx.ui.unit.dp
+import chat.Chat
 import com.example.data.DataStore
+import com.example.db.UserRepository
 import com.example.demojetpackcompose.R
 import com.example.myapplication.LoginActivity
 import com.example.ui.Screen
 import com.example.ui.navigateTo
+import grpc.PscrudGrpc
+import grpc.PscrudOuterClass
+import io.grpc.stub.StreamObserver
 
 @Composable
 fun AppDrawer(
     currentScreen: Screen,
     closeDrawer: () -> Unit,
     activity: Activity,
-    sharedPreferences: SharedPreferences
+    dbLocal: UserRepository,
+    grpcClient: PscrudGrpc.PscrudStub,mainThreadHandler: Handler
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         val openDialogLogout = state { false }
@@ -78,13 +86,7 @@ fun AppDrawer(
                     },
                     confirmButton = {
                         Button(onClick = {
-                            sharedPreferences.edit().apply {
-                                putString(DataStore.USER_SESSION, "")
-                                putString(DataStore.USERNAME, "")
-                                apply()
-                            }
-                            openDialogLogout.value = false
-                            stateCloseActivity.value = true
+                            logout(grpcClient,mainThreadHandler,dbLocal ,openDialogLogout,stateCloseActivity )
                         }) {
                             Text("Ok")
                         }
@@ -109,6 +111,7 @@ fun AppDrawer(
         }
     }
 }
+
 
 @Composable
 private fun DrawerButton(
@@ -159,5 +162,36 @@ private fun DrawerButton(
             }
         }
     }
+}
+
+// Logout user
+fun logout(grpcClient: PscrudGrpc.PscrudStub, mainThreadHandler: Handler,dbLocal: UserRepository ,
+           openDialogLogout: MutableState<Boolean>, stateCloseActivity: MutableState<Boolean> ) {
+    val request = PscrudOuterClass.Request.newBuilder()
+        .setSession(DataStore.session)
+        .build()
+
+    grpcClient.logout(request, object : StreamObserver<PscrudOuterClass.Response> {
+        override fun onNext(value: PscrudOuterClass.Response?) {
+            Log.e("Enc", "logout : " + value?.ok)
+            value?.ok?.let { isSuccessful ->
+                mainThreadHandler.post{
+                    dbLocal.deleteAllUser()
+                    openDialogLogout.value = false
+                    stateCloseActivity.value = true
+                }
+            }
+
+        }
+
+        override fun onError(t: Throwable?) {
+            Log.e("Enc", "logout onError")
+
+        }
+
+        override fun onCompleted() {
+            Log.e("Enc", "logout onCompleted")
+        }
+    })
 }
 

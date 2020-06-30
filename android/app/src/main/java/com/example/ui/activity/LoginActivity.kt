@@ -1,10 +1,8 @@
 package com.example.myapplication
 
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
-import android.os.Message
 import android.text.TextUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -29,7 +27,9 @@ import androidx.ui.unit.dp
 import androidx.ui.unit.sp
 import com.example.application.MyApplication
 import com.example.data.DataStore
+import com.example.db.UserRepository
 import com.example.demojetpackcompose.R
+import com.example.model.User
 import com.example.ui.activity.MainActivity
 import com.example.ui.component.FilledTextInputComponent
 import com.example.ui.lightThemeColors
@@ -40,21 +40,21 @@ import io.grpc.stub.StreamObserver
 class LoginActivity : AppCompatActivity() {
 
     lateinit var grpcClient: PscrudGrpc.PscrudStub
-    lateinit var sharedPreferences: SharedPreferences
+    lateinit var dbLocal: UserRepository
     lateinit var mainThreadHandler: Handler
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val appContainer = (application as MyApplication).container
         grpcClient = appContainer.grpcClient
-        sharedPreferences = appContainer.sharedPreferences
+        dbLocal = appContainer.dbLocal
         mainThreadHandler = appContainer.mainThreadHandler
-        val session = sharedPreferences.getString(DataStore.USER_SESSION, "")
-        val username = sharedPreferences.getString(DataStore.USERNAME, "")
-        if (!session.isNullOrBlank() && !username.isNullOrBlank()) {
-            onLoginSuccessful(session = session, username = username)
+        val username = dbLocal.allUser()
+        username?.let {
+            if (username.size > 0) {
+                onLoginSuccessful(username.get(0).firstName!!, username.get(0).session!!)
+            }
         }
-
         setContent {
             MyApp()
         }
@@ -100,7 +100,7 @@ class LoginActivity : AppCompatActivity() {
                     OutlinedButton(
                         onClick = {
                             if (validateInput(userName, pwd))
-                                login(userName, pwd)
+                                login(userName, pwd, dbLocal)
                         },
                         modifier = Modifier.padding(16.dp) + Modifier.weight(1f)
                     ) {
@@ -157,7 +157,7 @@ class LoginActivity : AppCompatActivity() {
         return true
     }
 
-    fun login(username: String, pwd: String) {
+    fun login(username: String, pwd: String, dbLocal: UserRepository) {
         val request = PscrudOuterClass.AuthRequest.newBuilder()
             .setUsername(username)
             .setPassword(pwd)
@@ -167,7 +167,7 @@ class LoginActivity : AppCompatActivity() {
             override fun onNext(response: PscrudOuterClass.AuthResponse?) {
                 response?.ok?.let { isSuccessful ->
                     if (isSuccessful) {
-                        onLoginSuccessful(response.session, username)
+                        onLoginSuccessful(username, response.session)
                     } else {
                         onShowMsg("Something went wrong")
                     }
@@ -193,7 +193,7 @@ class LoginActivity : AppCompatActivity() {
             override fun onNext(response: PscrudOuterClass.AuthResponse?) {
                 response?.ok?.let { isSuccessful ->
                     if (isSuccessful) {
-                        onLoginSuccessful(response.session, username)
+                        onLoginSuccessful(username, response.session)
                     } else {
                         onShowMsg("Something went wrong")
 
@@ -210,12 +210,15 @@ class LoginActivity : AppCompatActivity() {
         })
     }
 
-    fun onLoginSuccessful(session: String, username: String) {
-        sharedPreferences.edit().apply {
-            putString(DataStore.USER_SESSION, session)
-            putString(DataStore.USERNAME, username)
-            apply()
-        }
+    fun onLoginSuccessful(username: String, session: String) {
+        // remove User
+        dbLocal.deleteAllUser()
+        // update user for db
+        val user = User()
+        user.firstName = username
+        user.session = session
+        dbLocal.insertUser(user)
+
         DataStore.session = session
         DataStore.username = username
         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
