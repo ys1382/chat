@@ -7,6 +7,7 @@ import android.text.TextUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
+import androidx.compose.Model
 import androidx.ui.core.Alignment
 import androidx.ui.core.Modifier
 import androidx.ui.core.setContent
@@ -30,12 +31,14 @@ import com.example.data.DataStore
 import com.example.db.UserRepository
 import com.example.demojetpackcompose.R
 import com.example.model.User
+import com.example.secure.CryptoHelper
 import com.example.ui.activity.MainActivity
 import com.example.ui.component.FilledTextInputComponent
 import com.example.ui.lightThemeColors
 import grpc.PscrudGrpc
 import grpc.PscrudOuterClass
 import io.grpc.stub.StreamObserver
+import kotlinx.coroutines.*
 
 class LoginActivity : AppCompatActivity() {
 
@@ -49,15 +52,24 @@ class LoginActivity : AppCompatActivity() {
         grpcClient = appContainer.grpcClient
         dbLocal = appContainer.dbLocal
         mainThreadHandler = appContainer.mainThreadHandler
-        val username = dbLocal.allUser()
-        username?.let {
-            if (username.size > 0) {
-                onLoginSuccessful(username.get(0).firstName!!, username.get(0).session!!)
+
+        CoroutineScope(Dispatchers.Main).launch {
+            val data = async(Dispatchers.IO) { dbLocal.allUser() }
+            val result = data.await() // suspend
+            //update UI
+            result?.let {
+                if (result.size > 0) {
+                    onShowMsg("OKKKKE")
+                    CryptoHelper.initKeysSession(result.get(0).security)
+                    onGetAccLogin(result.get(0))
+                }
+            }
+            // init UI login
+            setContent {
+                MyApp()
             }
         }
-        setContent {
-            MyApp()
-        }
+
     }
 
     @Composable
@@ -210,14 +222,23 @@ class LoginActivity : AppCompatActivity() {
         })
     }
 
+
+    fun onGetAccLogin(user:User) {
+        DataStore.session = user.session
+        DataStore.username = user.firstName!!
+        startActivity(Intent(this@LoginActivity, MainActivity::class.java))
+        finish()
+    }
+
     fun onLoginSuccessful(username: String, session: String) {
-        // remove User
-        dbLocal.deleteAllUser()
-        // update user for db
-        val user = User()
-        user.firstName = username
-        user.session = session
-        dbLocal.insertUser(user)
+        CoroutineScope(Dispatchers.IO).launch {
+            async { dbLocal.deleteAllUser() }.await()
+            // update user for db
+            val user = User()
+            user.firstName = username
+            user.session = session
+            dbLocal.insertUser(user)
+        }
 
         DataStore.session = session
         DataStore.username = username

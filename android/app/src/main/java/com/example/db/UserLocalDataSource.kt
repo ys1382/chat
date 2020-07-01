@@ -1,6 +1,7 @@
 package com.example.db
 
 import com.example.model.User
+import kotlinx.coroutines.Deferred
 
 /**
  * Created by toand on 10/16/2017.
@@ -22,7 +23,7 @@ class UserLocalDataSource(val mUserDAO: UserDAO) :
         return mUserDAO.getUserByUserId(userId)
     }
 
-    override fun getUserByName(userName: String?): MutableList<User>? {
+    override fun getUserByName(userName: String?): User? {
         return mUserDAO.getUserByName(userName)
     }
 

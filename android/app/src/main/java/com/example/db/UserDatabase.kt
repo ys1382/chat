@@ -25,8 +25,8 @@ abstract class UserDatabase : RoomDatabase() {
                         UserDatabase::class.java,
                         DATABASE_NAME
                     )
-//                        .fallbackToDestructiveMigration()
-                        .allowMainThreadQueries()
+                        .fallbackToDestructiveMigration()
+//                        .allowMainThreadQueries()
                         .build()
             }
             return sUserDatabase

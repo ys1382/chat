@@ -6,10 +6,11 @@ import android.os.Looper
 import com.example.db.UserDatabase
 import com.example.db.UserLocalDataSource
 import com.example.db.UserRepository
+import com.example.secure.CryptoHelper
 import grpc.PscrudGrpc
 import io.grpc.ManagedChannelBuilder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.asExecutor
+import kotlinx.coroutines.*
+import kotlin.coroutines.suspendCoroutine
 
 
 /**
@@ -17,7 +18,8 @@ import kotlinx.coroutines.asExecutor
  */
 interface AppContainer {
     val grpcClient: PscrudGrpc.PscrudStub
-//    val sharedPreferences: SharedPreferences
+
+    //    val sharedPreferences: SharedPreferences
     val mainThreadHandler: Handler
     val dbLocal: UserRepository
 }
@@ -46,13 +48,13 @@ class AppContainerImpl(context: Context) : AppContainer {
     }
 
     override val dbLocal: UserRepository by lazy {
-        creteDB(context)
-    }
-
-    fun creteDB(context: Context): UserRepository {
-        val userDatabase = UserDatabase.getInstance(context)
-        val userLocal = UserLocalDataSource.getInstance(userDatabase!!.userDAO())
-        return UserRepository.getInstance(userLocal)!!
+        runBlocking {
+            val userDatabase = async { UserDatabase.getInstance(context) }.await()
+            val userLocal =
+                async { UserLocalDataSource.getInstance(userDatabase!!.userDAO()) }.await()
+            val userRepository = async { UserRepository.getInstance(userLocal) }.await()
+            return@runBlocking userRepository!!
+        }
     }
 }
 

@@ -27,6 +27,7 @@ import androidx.ui.unit.ipx
 import androidx.ui.unit.sp
 import chat.Chat
 import com.example.data.DataStore
+import com.example.db.UserRepository
 import com.example.model.Message
 import com.example.secure.CryptoHelper
 import com.example.secure.TinkPbe
@@ -206,14 +207,20 @@ fun HintEditText(
 }
 
 // Listener message from sender
-fun listen(grpcClient: PscrudGrpc.PscrudStub, mainThreadHandler: Handler) {
+fun listen(grpcClient: PscrudGrpc.PscrudStub, mainThreadHandler: Handler, dbLocal: UserRepository) {
     val request = PscrudOuterClass.Request.newBuilder()
         .setSession(DataStore.session)
         .build()
     grpcClient.listen(request, object : StreamObserver<PscrudOuterClass.Publication> {
         override fun onNext(value: PscrudOuterClass.Publication?) {
             if (null != value)
-                hear(value.id, Chat.Chit.parseFrom(value.data), grpcClient, mainThreadHandler)
+                hear(
+                    value.id,
+                    Chat.Chit.parseFrom(value.data),
+                    grpcClient,
+                    mainThreadHandler,
+                    dbLocal
+                )
         }
 
         override fun onError(t: Throwable?) {
@@ -228,12 +235,11 @@ private fun hear(
     id: String,
     chit: Chat.Chit,
     grpcClient: PscrudGrpc.PscrudStub,
-    mainThreadHandler: Handler
+    mainThreadHandler: Handler, dbLocal: UserRepository
 ) {
     when (chit.what) {
-
         Chat.Chit.What.HANDSHAKE -> {
-            receivedHandshake(chit.handshake, grpcClient, mainThreadHandler)
+            receivedHandshake(chit.handshake, grpcClient, mainThreadHandler, dbLocal)
         }
         Chat.Chit.What.ENVELOPE -> {
             mainThreadHandler.post {
@@ -443,7 +449,7 @@ private fun sendData(
         }
 
         override fun onCompleted() {
-            Log.d("Enc","onCompleted")
+            Log.d("Enc", "onCompleted")
         }
     })
 
@@ -451,7 +457,8 @@ private fun sendData(
 
 private fun receivedHandshake(
     handshake: Chat.Handshake, grpcClient: PscrudGrpc.PscrudStub,
-    mainThreadHandler: Handler
+    mainThreadHandler: Handler, dbLocal: UserRepository
+
 ) {
     val peer = handshake.from
     val signing = CryptoHelper.signing(handshake)
@@ -460,7 +467,7 @@ private fun receivedHandshake(
     try {
 
         Log.e("Enc", "peer: " + peer)
-        if (CryptoHelper.set(keySendConfirm, peer)) {
+        if (CryptoHelper.set(keySendConfirm, peer, dbLocal)) {
             //for receiver has a message handshake from Sender
             val getKeySetFromServeice = CryptoHelper.getKeySet(peer)
             val keySendFromReciver = CryptoHelper.KeySend(

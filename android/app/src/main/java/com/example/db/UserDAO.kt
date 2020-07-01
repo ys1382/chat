@@ -2,6 +2,7 @@ package com.example.db
 
 import androidx.room.*
 import com.example.model.User
+import kotlinx.coroutines.Deferred
 
 @Dao
 interface UserDAO {
@@ -9,7 +10,7 @@ interface UserDAO {
     fun getUserByUserId(userId: Int): User?
 
     @Query("SELECT * FROM users WHERE first_name LIKE :userName")
-    fun getUserByName(userName: String?): MutableList<User>?
+    fun getUserByName(userName: String?): User?
 
     @Query("SELECT * FROM users")
     fun allUser(): MutableList<User>?

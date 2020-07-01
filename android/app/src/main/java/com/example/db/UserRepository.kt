@@ -1,6 +1,8 @@
 package com.example.db
 
 import com.example.model.User
+import kotlinx.coroutines.Deferred
+import kotlin.coroutines.suspendCoroutine
 
 
 class UserRepository(private val mLocalDataSource: UserDataSource) :
@@ -17,12 +19,11 @@ class UserRepository(private val mLocalDataSource: UserDataSource) :
     }
 
 
-
     override fun getUserByUserId(userId: Int): User? {
         return mLocalDataSource.getUserByUserId(userId)
     }
 
-    override fun getUserByName(userName: String?): MutableList<User>? {
+    override fun getUserByName(userName: String?): User? {
         return mLocalDataSource.getUserByName(userName)
     }
 

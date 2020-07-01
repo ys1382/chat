@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
         grpcClient = appContainer.grpcClient
         mainThreadHandler = appContainer.mainThreadHandler
         dbLocal =appContainer.dbLocal
-        listen(grpcClient, mainThreadHandler)
+        listen(grpcClient, mainThreadHandler,dbLocal)
         subscribe(grpcClient, DataStore.username)
         setContent {
             DrawerAppComponent()
