@@ -79,13 +79,13 @@ class Authenticator {
     private func authenticate(_ username: String,
                               _ password: String,
                               _ completion: @escaping (Bool, Error?) -> Void,
-                              submit: @escaping (Grpc_AuthRequest, CallOptions?)
+                              submit: @escaping (Grpc_AuthRequest)
                               -> UnaryCall<Grpc_AuthRequest, Grpc_AuthResponse>) {
         let request : Grpc_AuthRequest = .with {
             $0.username = username
             $0.password = password
         }
-        submit(request, nil).response.whenComplete { result in
+        submit(request).response.whenComplete { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let response):
