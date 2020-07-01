@@ -59,13 +59,13 @@ object CryptoHelper {
 
 
     // returns false if this is a response to the handshake we sent
-    fun set(keySend: KeySend, sender: String, dbLocal: UserRepository): Boolean {
+    fun set(agreement: ByteArray, sender: String, dbLocal: UserRepository): Boolean {
         val key = getKeySet(sender)
         if (key != null) {
-            if (null != keySend.signing) {
-                keys[sender]!!.theirSigning = keySend.signing
-            }
-            keys[sender]!!.theirAgreement = keySend.agreement
+//            if (null != keySend.signing) {
+//                keys[sender]!!.theirSigning = keySend.signing
+//            }
+            keys[sender]!!.theirAgreement = agreement
 
             val currentUser = dbLocal.getUserByName(DataStore.username)
             if (!TextUtils.isEmpty(currentUser?.security)) {
@@ -94,8 +94,8 @@ object CryptoHelper {
             keys[sender] = KeySet(
                 privateKey,
                 publishKey,
-                keySend.signing,
-                keySend.agreement
+                null,
+                agreement
             )
 
             val currentUser = dbLocal.getUserByName(DataStore.username)
@@ -109,7 +109,6 @@ object CryptoHelper {
                 dbLocal.updateUser(currentUser)
 
             } else {
-
                 val listDeviceConnect = mutableMapOf<String, KeySet>()
                 listDeviceConnect.set(sender, getKeySet(sender)!!)
 
