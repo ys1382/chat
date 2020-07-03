@@ -31,6 +31,7 @@ interface AppContainer {
  */
 class AppContainerImpl(context: Context) : AppContainer {
     override val grpcClient: PscrudGrpc.PscrudStub by lazy {
+//        val channel = ManagedChannelBuilder.forAddress("jetpack.tel.red", 11912)
         val channel = ManagedChannelBuilder.forAddress("10.0.2.2", 11912)
             .usePlaintext()
             .executor(Dispatchers.Default.asExecutor())
