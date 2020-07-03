@@ -62,9 +62,6 @@ object CryptoHelper {
     fun set(agreement: ByteArray, sender: String, dbLocal: UserRepository): Boolean {
         val key = getKeySet(sender)
         if (key != null) {
-//            if (null != keySend.signing) {
-//                keys[sender]!!.theirSigning = keySend.signing
-//            }
             keys[sender]!!.theirAgreement = agreement
 
             val currentUser = dbLocal.getUserByName(DataStore.username)

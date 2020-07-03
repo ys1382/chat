@@ -246,11 +246,13 @@ private fun hear(
             receivedHandshake(chit.handshake, grpcClient, mainThreadHandler, dbLocal)
         }
         Chat.Chit.What.ENVELOPE -> {
+
             mainThreadHandler.post {
                 val keySet = CryptoHelper.getKeySet(chit.envelope.from)
                 val secret = keySet?.let {
                     CryptoHelper.getSecretKey(it)
                 }
+                Log.e("Enc", "peer: receive envelop" + Gson().toJson(keySet))
                 try {
                     val strDecr = TinkPbe.decrypt(chit.envelope.payload.toStringUtf8(), secret)
                     messagesList.add(
@@ -346,7 +348,11 @@ private fun sendHandshake(
     recipient: String,
     mainThreadHandler: Handler
 ) {
-
+    if (CryptoHelper.checkHandShaked(recipient)) {
+        Log.e("Enc", "Send Message imtermadiate")
+        sendMessage(recipient, grpcClient, mainThreadHandler)
+        return
+    }
     val keySend = CryptoHelper.getKeySendTo(recipient)
     Log.e("Enc", "sendHandshake " + Gson().toJson(keySend.agreement))
     val handshake = Chat.Handshake.newBuilder()
@@ -361,11 +367,7 @@ private fun sendHandshake(
         sendData(grpcClient, recipient, chit.toByteString(), mainThreadHandler)
     } catch (e: Exception) {
     }
-    if (CryptoHelper.checkHandShaked(recipient)) {
-        Log.e("Enc", "Send Message imtermadiate")
-        sendMessage(recipient, grpcClient, mainThreadHandler)
-        return
-    }
+
 }
 
 private fun sendConfirmHandshake(
@@ -406,9 +408,7 @@ private fun sendDataAfterHandshake(
         override fun onNext(response: PscrudOuterClass.Response?) {
             Log.d("Enc", response?.ok.toString())
             response?.ok?.let { isSuccessful ->
-                mainThreadHandler.post {
-                    sendMessage(recipient, grpcClient, mainThreadHandler)
-                }
+
             }
         }
 
@@ -460,12 +460,13 @@ private fun receivedHandshake(
     mainThreadHandler: Handler, dbLocal: UserRepository
 ) {
     val peer = handshake.from
-    val agreement = CryptoHelper.agreement(handshake)
-    Log.e("Enc", "peer: " + peer)
-    if (CryptoHelper.set(agreement.toByteArray(), peer, dbLocal)) {
-        //for receiver has a message handshake from Sender
-        sendConfirmHandshake(grpcClient, agreement.toByteArray(), peer, mainThreadHandler)
+    if (CryptoHelper.set(handshake.agreement.toByteArray(), peer, dbLocal)) {
+        Log.e("Enc", "peer: resend handshake to " + peer)
+        val keyResendConfirm = CryptoHelper.getKeySet(peer)!!.ourAgreement
+        //for receiver resend handshake to Sender
+        sendConfirmHandshake(grpcClient, keyResendConfirm, peer, mainThreadHandler)
     } else {
+        Log.e("Enc", "peer: send envelop to " + peer)
         // for listen hanshake success from Receiver
         sendMessage(peer, grpcClient, mainThreadHandler)
     }
@@ -481,8 +482,9 @@ private fun sendMessage(
         CryptoHelper.getSecretKey(it)
     }
     listMsg.get(peer)?.let {
+
         val msg = TinkPbe.encrypt(it.envelope.payload.toString(), secret)
-        Log.e("Enc", "Msg send : " + msg)
+        Log.e("Enc", "Msg send : " + Gson().toJson(keySet))
 
         val envelope = Chat.Envelope.newBuilder().setFrom(DataStore.username)
             .setPayload(ByteString.copyFromUtf8(msg))
