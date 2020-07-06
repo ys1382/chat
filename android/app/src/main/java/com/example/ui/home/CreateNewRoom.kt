@@ -53,7 +53,7 @@ fun viewCreateNewRoom(rooms: MutableList<Room>) {
             val imageModifier = Modifier
                 .preferredSize(100.dp)
 
-            Container(Modifier.fillMaxWidth(), alignment = Alignment.TopCenter) {
+            Box(Modifier.fillMaxWidth(), gravity = Alignment.TopCenter) {
                 Image(image, imageModifier)
             }
             Spacer(Modifier.preferredHeight(48.dp))

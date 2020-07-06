@@ -7,7 +7,6 @@ import android.text.TextUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
-import androidx.compose.Model
 import androidx.ui.core.Alignment
 import androidx.ui.core.Modifier
 import androidx.ui.core.setContent
@@ -100,7 +99,7 @@ class LoginActivity : AppCompatActivity() {
                         )
                     })
 
-                Container(Modifier.fillMaxWidth(), alignment = Alignment.TopCenter) {
+                Box(Modifier.fillMaxWidth(), gravity = Alignment.TopCenter) {
                     Image(image, imageModifier)
                 }
 
