@@ -19,6 +19,7 @@ import androidx.ui.unit.sp
 import com.example.demojetpackcompose.R
 import com.example.model.Message
 import com.example.model.Room
+import com.example.state.backpress.BackButtonHandler
 import com.example.ui.Screen
 import com.example.ui.navigateTo
 import com.example.ui.component.FilledTextInputComponent
@@ -40,6 +41,10 @@ fun CreateNewRoom(rooms: MutableList<Room>) {
             // Center is a composable that centers all the child composables that are passed to it.
             viewCreateNewRoom(rooms)
         }
+    }
+    // Event back press on the device
+    BackButtonHandler {
+        navigateTo(Screen.Home)
     }
 }
 

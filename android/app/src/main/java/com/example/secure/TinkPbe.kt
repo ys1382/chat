@@ -1,7 +1,7 @@
 package com.example.secure
 
-import com.example.ui.base64Decode
-import com.example.ui.base64Encode
+import com.example.utils.base64Decode
+import com.example.utils.base64Encode
 import com.google.crypto.tink.CleartextKeysetHandle
 import com.google.crypto.tink.JsonKeysetReader
 import com.google.crypto.tink.aead.AeadFactory

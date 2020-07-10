@@ -18,7 +18,6 @@ app/.gitignore
 gradlew.bat
 caches/
 native/
-wrapper/
 daemon/6.4-rc-1/daemon-11160.out.log
 daemon/6.4-rc-1/daemon-2852.out.log
 daemon/6.4-rc-1/registry.bin
