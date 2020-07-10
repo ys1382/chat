@@ -32,8 +32,6 @@ sealed class Screen {
 @Model
 object ChatStatus {
     var currentScreen: Screen = Screen.Home
-    val favorites = ModelList<String>()
-    val selectedTopics = ModelList<String>()
 }
 
 /**

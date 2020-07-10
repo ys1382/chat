@@ -7,6 +7,7 @@ import android.text.TextUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
+import androidx.compose.state
 import androidx.ui.core.Alignment
 import androidx.ui.core.Modifier
 import androidx.ui.core.setContent
@@ -14,10 +15,8 @@ import androidx.ui.foundation.Box
 import androidx.ui.foundation.ContentGravity
 import androidx.ui.foundation.Image
 import androidx.ui.foundation.Text
-import androidx.ui.graphics.Color
 import androidx.ui.layout.*
 import androidx.ui.material.MaterialTheme
-import androidx.ui.material.OutlinedButton
 import androidx.ui.res.imageResource
 import androidx.ui.res.stringResource
 import androidx.ui.text.TextStyle
@@ -32,8 +31,9 @@ import com.example.demojetpackcompose.R
 import com.example.model.User
 import com.example.secure.CryptoHelper
 import com.example.ui.activity.MainActivity
-import com.example.ui.component.FilledTextInputComponent
+import com.example.ui.widget.FilledTextInputComponent
 import com.example.ui.lightThemeColors
+import com.example.ui.widget.ButtonGeneral
 import grpc.PscrudGrpc
 import grpc.PscrudOuterClass
 import io.grpc.stub.StreamObserver
@@ -46,7 +46,6 @@ class LoginActivity : AppCompatActivity() {
     lateinit var mainThreadHandler: Handler
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         val appContainer = (application as MyApplication).container
         grpcClient = appContainer.grpcClient
         dbLocal = appContainer.dbLocal
@@ -58,7 +57,6 @@ class LoginActivity : AppCompatActivity() {
             //update UI
             result?.let {
                 if (result.size > 0) {
-                    onShowMsg("OKKKKE")
                     CryptoHelper.initKeysSession(result.get(0).security)
                     onGetAccLogin(result.get(0))
                 }
@@ -82,6 +80,8 @@ class LoginActivity : AppCompatActivity() {
 
     @Composable
     fun AppContent() {
+        val userName = state { "" }
+        val pwd = state { "" }
         Row(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
                 Spacer(Modifier.preferredHeight(24.dp))
@@ -103,38 +103,32 @@ class LoginActivity : AppCompatActivity() {
                     Image(image, imageModifier)
                 }
 
-                val userName = FilledTextInputComponent("Username", "")
-                val pwd = FilledTextInputComponent("Password", "")
+                FilledTextInputComponent(
+                    "Username",
+                    "",
+                    userName
+                )
+                FilledTextInputComponent(
+                    "Password",
+                    "",
+                    pwd
+                )
 
                 Row() {
 
-                    OutlinedButton(
+                    ButtonGeneral(
+                        stringResource(R.string.btn_login),
                         onClick = {
-                            if (validateInput(userName, pwd))
-                                login(userName, pwd, dbLocal)
-                        },
-                        modifier = Modifier.padding(16.dp) + Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "Login",
-                            color = Color.Blue,
-                            modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 8.dp)
-                        )
-                    }
+                            if (validateInput(userName.value, pwd.value))
+                                login(userName.value, pwd.value, dbLocal)
+                        })
 
-                    OutlinedButton(
+                    ButtonGeneral(
+                        stringResource(R.string.btn_register),
                         onClick = {
-                            if (validateInput(userName, pwd))
-                                register(userName, pwd)
-                        },
-                        modifier = Modifier.padding(16.dp) + Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "Register",
-                            color = Color.Blue,
-                            modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 8.dp)
-                        )
-                    }
+                            if (validateInput(userName.value, pwd.value))
+                                register(userName.value, pwd.value)
+                        })
                 }
 
             }
@@ -207,7 +201,6 @@ class LoginActivity : AppCompatActivity() {
                         onLoginSuccessful(username, response.session)
                     } else {
                         onShowMsg("Something went wrong")
-
                     }
                 }
             }
@@ -222,7 +215,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
 
-    fun onGetAccLogin(user:User) {
+    fun onGetAccLogin(user: User) {
         DataStore.session = user.session
         DataStore.username = user.firstName!!
         startActivity(Intent(this@LoginActivity, MainActivity::class.java))

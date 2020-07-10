@@ -1,28 +1,23 @@
 package com.example.ui.home
 
 import androidx.compose.Composable
+import androidx.compose.state
 import androidx.ui.core.Alignment
 import androidx.ui.core.Modifier
 import androidx.ui.foundation.*
 import androidx.ui.graphics.Color
 import androidx.ui.layout.*
-import androidx.ui.layout.ColumnScope.weight
 import androidx.ui.material.*
 import androidx.ui.material.icons.Icons
 import androidx.ui.material.icons.filled.ArrowBack
-import androidx.ui.material.ripple.ripple
 import androidx.ui.res.imageResource
-import androidx.ui.text.TextStyle
-import androidx.ui.text.style.TextAlign
 import androidx.ui.unit.dp
-import androidx.ui.unit.sp
 import com.example.demojetpackcompose.R
-import com.example.model.Message
 import com.example.model.Room
 import com.example.state.backpress.BackButtonHandler
 import com.example.ui.Screen
 import com.example.ui.navigateTo
-import com.example.ui.component.FilledTextInputComponent
+import com.example.ui.widget.FilledTextInputComponent
 
 @Composable
 fun CreateNewRoom(rooms: MutableList<Room>) {
@@ -50,6 +45,7 @@ fun CreateNewRoom(rooms: MutableList<Room>) {
 
 @Composable
 fun viewCreateNewRoom(rooms: MutableList<Room>) {
+    val roomId = state { "" }
     Row(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Spacer(Modifier.preferredHeight(24.dp))
@@ -63,21 +59,26 @@ fun viewCreateNewRoom(rooms: MutableList<Room>) {
             }
             Spacer(Modifier.preferredHeight(48.dp))
 
-            val roomId = FilledTextInputComponent("Recipient", " ")
+            FilledTextInputComponent(
+                "Recipient",
+                " ",
+                roomId
+            )
 
             Spacer(Modifier.preferredHeight(48.dp))
             Row() {
 
                 OutlinedButton(
                     onClick = {
-                        if (roomId.isNotBlank()) {
-                            rooms.add(Room(roomId))
+                        if (roomId.value.isNotBlank()) {
+                            rooms.add(Room(roomId.value))
                         }
                         navigateTo(Screen.Home)
                     },
                     modifier = Modifier.padding(16.dp) + Modifier.weight(1f)
                 ) {
-                    Text(text = "Ok",
+                    Text(
+                        text = "Ok",
                         color = Color.Blue,
                         modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 8.dp)
                     )
