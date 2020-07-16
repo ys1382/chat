@@ -44,12 +44,68 @@ class Crypto {
                            agreement: agreement.publicKey)
         }
     }
+    
+
+    
+    func getHandshakeExist(for recipient: String) -> Bool {
+        
+        ListKeySendArchived.unarchiveData().forEach { (model) in
+            
+            guard let object = model.object,
+                let ourSigning = object.ourSigning,
+                let ourAgreement = object.ourAgreement,
+                let theirAgreement = object.theirAgreement else {
+                    
+                return
+            }
+            
+            do {
+                let signingPrivate = try Curve25519.Signing.PrivateKey(rawRepresentation: ourSigning)
+                
+                let agreementPrivate = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: ourAgreement)
+                
+                let agreementPublic = try! Crypto.agreement(from: theirAgreement)
+                
+                let keySet = KeySet(sequence: object.sequence,
+                                    ourSigning: signingPrivate,
+                                    ourAgreement: agreementPrivate,
+                                    theirSigning: nil,
+                                    theirAgreement: agreementPublic)
+              
+                keys[model.key] = keySet
+            } catch {
+                
+                print(error.localizedDescription)
+            }
+        }
+        
+        sequence = sequence &+ 1
+        
+        if let key = keys[recipient] {
+            let agreement = Curve25519.KeyAgreement.PrivateKey()
+            keys[recipient]!.ourAgreement = agreement
+            
+            ListKeySendArchived.archivedData(data: keys)
+            return true
+        } else {
+            let signing = Curve25519.Signing.PrivateKey()
+            let agreement = Curve25519.KeyAgreement.PrivateKey()
+            keys[recipient] = KeySet(sequence: sequence,
+                                     ourSigning: signing,
+                                     ourAgreement: agreement,
+                                     theirSigning: nil,
+                                     theirAgreement: nil)
+            return false
+        }
+    }
 
     // returns false if this is a response to the handshake we sent
     func set(_ keySend: KeySend, from sender: String) -> Bool {
         if let key = keys[sender] {
             keys[sender]!.theirSigning = keySend.signing ?? key.theirSigning
             keys[sender]!.theirAgreement = keySend.agreement
+            
+            ListKeySendArchived.archivedData(data: keys)
 //            if key.sequence == keySend.sequence {
                 return false
 //            }
@@ -85,7 +141,7 @@ class Crypto {
 
     var sequence: UInt64 = 0
 
-    private struct KeySet {
+    struct KeySet {
         var sequence: UInt64
         var ourSigning: Curve25519.Signing.PrivateKey
         var ourAgreement: Curve25519.KeyAgreement.PrivateKey
@@ -160,3 +216,115 @@ class Crypto {
         return try ChaChaPoly.open(sealedBox, using: symmetricKey)
     }
 }
+
+
+class ListKeySendArchived: NSObject, NSCoding {
+    
+    var key: String = ""
+    
+    var object: KeySendArchivedData?
+    
+    
+    init(key: String, value: KeySendArchivedData?) {
+        self.key = key
+        self.object = value
+    }
+    
+    func encode(with coder: NSCoder) {
+        coder.encode(self.key, forKey: "key")
+        coder.encode(self.object, forKey: "obj")
+    }
+    
+    required init?(coder: NSCoder) {
+        self.key = coder.decodeObject(forKey: "key") as? String ?? ""
+        self.object = coder.decodeObject(forKey: "obj") as? KeySendArchivedData
+    }
+    
+    
+    // MARK: Save Key
+    static func archivedData(data: [String: Crypto.KeySet]) {
+        
+        let mapObj = data.map { ListKeySendArchived(key: $0.key, value: KeySendArchivedData(sequence: $0.value.sequence,
+                                                                                            ourSigning: $0.value.ourSigning.rawRepresentation,
+                                                                                            ourAgreement: $0.value.ourAgreement.rawRepresentation,
+                                                                                            theirSigning: $0.value.theirSigning?.rawRepresentation,
+                                                                                            theirAgreement: $0.value.theirAgreement?.rawRepresentation))}
+        
+        guard let saveData = try? NSKeyedArchiver.archivedData(withRootObject: mapObj, requiringSecureCoding: false) else {
+            print("Fail store data")
+            return
+        }
+        
+        let manager = UserDefaults.standard
+        manager.set(saveData, forKey: "keyStore")
+    }
+    
+    
+    static func unarchiveData() -> [ListKeySendArchived] {
+        
+        guard let loadData = UserDefaults.standard.object(forKey: "keyStore") as? Data,
+            let decodeKeySendArchiveData = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(loadData) as? [ListKeySendArchived] else {
+                print("Load data fail")
+                return []
+        }
+        
+        
+        return decodeKeySendArchiveData
+    }
+    
+    
+    static func getData(data: Data, completion: (Curve25519.Signing.PublicKey?) -> Void) {
+        do {
+            let a = try Curve25519.Signing.PublicKey(rawRepresentation: data)
+            completion(a)
+            
+        } catch {
+            completion(nil)
+        }
+    }
+}
+
+
+class KeySendArchivedData: NSObject, NSCoding {
+
+    var sequence: UInt64 = UInt64()
+    
+    var ourSigning: Data?
+    
+    var ourAgreement: Data?
+    
+    var theirSigning: Data?
+
+    var theirAgreement: Data?
+    
+    
+    override init() {
+        super.init()
+    }
+    
+    
+    init(sequence: UInt64, ourSigning: Data, ourAgreement: Data, theirSigning: Data?, theirAgreement: Data?) {
+        self.sequence = sequence
+        self.ourSigning = ourSigning
+        self.ourAgreement = ourAgreement
+        self.theirSigning = theirSigning
+        self.theirAgreement = theirAgreement
+    }
+    
+    func encode(with coder: NSCoder) {
+        coder.encode(self.sequence, forKey: "sequence")
+        coder.encode(self.ourSigning, forKey: "ourSigning")
+        coder.encode(self.ourAgreement, forKey: "ourAgreement")
+        coder.encode(self.theirSigning, forKey: "theirSigning")
+        coder.encode(self.theirAgreement, forKey: "theirAgreement")
+    }
+    
+    required init?(coder: NSCoder) {
+        self.sequence = coder.decodeObject(forKey: "sequence") as? UInt64 ?? UInt64()
+        self.ourSigning = coder.decodeObject(forKey: "ourSigning") as? Data
+        self.ourAgreement = coder.decodeObject(forKey: "ourAgreement") as? Data
+        self.theirSigning = coder.decodeObject(forKey: "theirSigning") as? Data
+        self.theirAgreement = coder.decodeObject(forKey: "theirAgreement") as? Data
+    }
+}
+

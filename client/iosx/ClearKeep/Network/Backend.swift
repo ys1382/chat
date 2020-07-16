@@ -81,7 +81,22 @@ class Backend: ObservableObject {
         do {
             let data = try chit.serializedData()
             queue[recipient] = data
-            sendHandshake(to: recipient, completion)
+            
+            if recipient.isEmpty {
+                
+                print("Recipient is empty " , " ----> khong gui cho ai")
+            }
+            
+            // -- check user handshake exist
+            if crypto.getHandshakeExist(for: recipient) {
+                
+                try send(data, to: recipient)
+                
+            } else {
+                
+                sendHandshake(to: recipient, completion)
+            }
+
         } catch {
             Backend.log("Backend send envelope error: \(error)")
             completion(false, error)
@@ -122,7 +137,7 @@ class Backend: ObservableObject {
             break
         case .envelope:
             print("Heard envelope")
-            let post = PostModel(id: id, envelope: chit.envelope)
+            let post = PostModel(id: id, envelope: chit.envelope, from: chit.envelope.from)
             Backend.log("received \(chit.envelope.payload)")
             self.messages.append(post)
         case .UNRECOGNIZED(_):
@@ -131,14 +146,14 @@ class Backend: ObservableObject {
     }
 
     private func download(_ completion: @escaping (Bool, Error?) -> Void) {
-        pscrud.storeLoad(key: Pscrud.key_publication) { success, data, error in
-            guard success else {
-                completion(false, error)
-                return
-            }
-            self.rooms = RoomModel.from(data)
-            self.messages = data.compactMap { try? PostModel.from($0) }
-        }
+//        pscrud.storeLoad(key: Pscrud.key_publication) { success, data, error in
+//            guard success else {
+//                completion(false, error)
+//                return
+//            }
+//            self.rooms = RoomModel.from(data)
+//            self.messages = data.compactMap { try? PostModel.from($0) }
+//        }
     }
 
     private func sendHandshake(to recipient: String,
@@ -229,10 +244,12 @@ struct RoomModel: Identifiable, Hashable {
 struct PostModel: Identifiable {
     var id: String
     var envelope: Chat_Envelope
-
+    var newID = UUID().uuidString
+    var from: String
+    
     static func from(_ datum: Grpc_Datum) throws -> PostModel {
         let envelope = try Chat_Envelope(serializedData: datum.data)
-        return PostModel(id: datum.id, envelope: envelope)
+        return PostModel(id: datum.id, envelope: envelope, from: envelope.from)
     }
 }
 
