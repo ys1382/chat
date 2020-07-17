@@ -49,52 +49,42 @@ class Crypto {
     
     func getHandshakeExist(for recipient: String) -> Bool {
         
-        ListKeySendArchived.unarchiveData().forEach { (model) in
-            
-            guard let object = model.object,
-                let ourSigning = object.ourSigning,
-                let ourAgreement = object.ourAgreement,
-                let theirAgreement = object.theirAgreement else {
-                    
-                return
-            }
-            
-            do {
-                let signingPrivate = try Curve25519.Signing.PrivateKey(rawRepresentation: ourSigning)
-                
-                let agreementPrivate = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: ourAgreement)
-                
-                let agreementPublic = try! Crypto.agreement(from: theirAgreement)
-                
-                let keySet = KeySet(sequence: object.sequence,
-                                    ourSigning: signingPrivate,
-                                    ourAgreement: agreementPrivate,
-                                    theirSigning: nil,
-                                    theirAgreement: agreementPublic)
-              
-                keys[model.key] = keySet
-            } catch {
-                
-                print(error.localizedDescription)
+        if keys.isEmpty {
+
+            ListKeySendArchived.unarchiveData().forEach { (model) in
+
+                guard let object = model.object,
+                    let ourSigning = object.ourSigning,
+                    let ourAgreement = object.ourAgreement,
+                    let theirAgreement = object.theirAgreement else {
+
+                    return
+                }
+
+                do {
+                    let signingPrivate = try Curve25519.Signing.PrivateKey(rawRepresentation: ourSigning)
+
+                    let agreementPrivate = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: ourAgreement)
+
+                    let agreementPublic = try! Crypto.agreement(from: theirAgreement)
+
+                    let keySet = KeySet(sequence: object.sequence,
+                                        ourSigning: signingPrivate,
+                                        ourAgreement: agreementPrivate,
+                                        theirSigning: nil,
+                                        theirAgreement: agreementPublic)
+
+                    keys[model.key] = keySet
+                } catch {
+
+                    print(error.localizedDescription)
+                }
             }
         }
         
-        sequence = sequence &+ 1
-        
         if let key = keys[recipient] {
-            let agreement = Curve25519.KeyAgreement.PrivateKey()
-            keys[recipient]!.ourAgreement = agreement
-            
-            ListKeySendArchived.archivedData(data: keys)
             return true
         } else {
-            let signing = Curve25519.Signing.PrivateKey()
-            let agreement = Curve25519.KeyAgreement.PrivateKey()
-            keys[recipient] = KeySet(sequence: sequence,
-                                     ourSigning: signing,
-                                     ourAgreement: agreement,
-                                     theirSigning: nil,
-                                     theirAgreement: nil)
             return false
         }
     }
@@ -118,6 +108,8 @@ class Crypto {
                                   ourAgreement: agreement,
                                   theirSigning: keySend.signing,
                                   theirAgreement: keySend.agreement)
+            
+            ListKeySendArchived.archivedData(data: keys)
         }
         return true
     }
