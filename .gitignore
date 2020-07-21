@@ -1,1 +1,4 @@
 .DS_Store
+client/android/.idea/
+client/android/app/build/
+client/android/.gradle/
