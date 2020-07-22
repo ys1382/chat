@@ -1,6 +1,6 @@
 #!/bin/sh
 
-RUN_DIR=/Users/reasonamu/Documents/GITHUB_CLONE_SOURCE/chat/server
+RUN_DIR=/Users/reasonamu/Desktop/chat/server
 echo $RUN_DIR
 
 echo "Run server"
