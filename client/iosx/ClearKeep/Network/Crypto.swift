@@ -1,7 +1,9 @@
 import CryptoKit
 import Foundation
 
-class Crypto {
+open class Crypto {
+    
+    static let shared: Crypto = Crypto()
 
     struct SealedMessage {
         let senderAgreement: Data
@@ -49,50 +51,60 @@ class Crypto {
     
     func getHandshakeExist(for recipient: String) -> Bool {
         
-        if keys.isEmpty {
-
-            ListKeySendArchived.unarchiveData().forEach { (model) in
-
-                guard let object = model.object,
-                    let ourSigning = object.ourSigning,
-                    let ourAgreement = object.ourAgreement,
-                    let theirAgreement = object.theirAgreement else {
-
-                    return
-                }
-
-                do {
-                    let signingPrivate = try Curve25519.Signing.PrivateKey(rawRepresentation: ourSigning)
-
-                    let agreementPrivate = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: ourAgreement)
-
-                    let agreementPublic = try! Crypto.agreement(from: theirAgreement)
-
-                    let keySet = KeySet(sequence: object.sequence,
-                                        ourSigning: signingPrivate,
-                                        ourAgreement: agreementPrivate,
-                                        theirSigning: nil,
-                                        theirAgreement: agreementPublic)
-
-                    keys[model.key] = keySet
-                } catch {
-
-                    print(error.localizedDescription)
-                }
-            }
-        }
+//        if keys.isEmpty {
+//
+//            self.loadKeySend()
+//        }
         
         if let key = keys[recipient] {
+            
+            
             return true
         } else {
+            
+            
             return false
+        }
+    }
+    
+    
+    func loadKeySend() {
+        
+        ListKeySendArchived.unarchiveData().forEach { (model) in
+
+            guard let object = model.object,
+                let ourSigning = object.ourSigning,
+                let ourAgreement = object.ourAgreement,
+                let theirAgreement = object.theirAgreement else {
+
+                return
+            }
+
+            do {
+                let signingPrivate = try Curve25519.Signing.PrivateKey(rawRepresentation: ourSigning)
+
+                let agreementPrivate = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: ourAgreement)
+
+                let agreementPublic = try! Crypto.agreement(from: theirAgreement)
+
+                let keySet = KeySet(sequence: object.sequence,
+                                    ourSigning: signingPrivate,
+                                    ourAgreement: agreementPrivate,
+                                    theirSigning: nil,
+                                    theirAgreement: agreementPublic)
+
+                keys[model.key] = keySet
+            } catch {
+
+                print(error.localizedDescription)
+            }
         }
     }
 
     // returns false if this is a response to the handshake we sent
     func set(_ keySend: KeySend, from sender: String) -> Bool {
         if let key = keys[sender] {
-            keys[sender]!.theirSigning = keySend.signing ?? key.theirSigning
+//            keys[sender]!.theirSigning = keySend.signing ?? key.theirSigning
             keys[sender]!.theirAgreement = keySend.agreement
             
             ListKeySendArchived.archivedData(data: keys)

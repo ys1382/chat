@@ -2,6 +2,7 @@
 
 import Foundation
 import Combine
+import CryptoKit
 
 import SwiftProtobuf
 import NIO
@@ -44,6 +45,9 @@ class Backend: ObservableObject {
 
         authenticator = Authenticator(client)
         pscrud = Pscrud(client, authenticator)
+        
+        crypto.loadKeySend()
+        
     }
 
     deinit {
@@ -185,22 +189,37 @@ class Backend: ObservableObject {
             let peer = handshake.from
             print("Received handshake from \(peer)")
 
-            let signing = try Crypto.signing(from: handshake.signing)
+//            let signing = try Crypto.signing(from: handshake.signing)
             let agreement = try Crypto.agreement(from: handshake.agreement)
             let keySend = Crypto.KeySend(sequence: sequence,
-                                         signing: signing,
+                                         signing: nil,
                                          agreement: agreement)
             if crypto.set(keySend, from: peer) {
+                
                 sendHandshake(to: peer) { success, error in
                     if !success {
                         Backend.log("Error: failed to respond to handshake: \(String(describing: error))")
+                    } else {
+                        print("-----------> ss")
                     }
                 }
+                
+                
+            } else {
+                // sender
+                if let data = queue[peer] {
+                    do {
+                        try send(data, to: peer)
+                        queue.removeValue(forKey: peer)
+                    } catch {
+                        print("-----------> " , error.localizedDescription)
+                    }
+                } else {
+                    print("----------->")
+                }
+                
             }
-            if let data = queue[peer] {
-                try send(data, to: peer)
-                queue.removeValue(forKey: peer)
-            }
+            
         } catch {
             Backend.log("Error: could not use handshake \(sequence) from \(handshake.from)")
         }
