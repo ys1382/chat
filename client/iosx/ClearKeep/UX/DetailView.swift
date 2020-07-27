@@ -28,6 +28,9 @@ struct DetailView: View {
                     Image(systemName: "paperplane")
                 }.padding(.trailing)
             }
+            
+        }.onAppear() {
+            self.resource.messages.removeAll()
         }
     }
 

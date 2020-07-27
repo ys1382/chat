@@ -67,53 +67,73 @@ class Backend: ObservableObject {
     func send(_ message: String,
               to recipient: String,
               _ completion: @escaping (Bool, Error?) -> Void) {
-
-        guard let payload = message.data(using: .utf8) else {
-            print("Could not datify \(message)")
-            completion(false, nil)
-            return
-        }
-        let envelope : Chat_Envelope = .with {
-            $0.from = authenticator.username!
-            $0.to = recipient
-            $0.payload = payload
-        }
-        let chit: Chat_Chit = .with {
-            $0.what = .envelope
-            $0.envelope = envelope
-        }
-        do {
-            let data = try chit.serializedData()
-            queue[recipient] = data
-            
-            if recipient.isEmpty {
-                
-                print("Recipient is empty " , " ----> khong gui cho ai")
-            }
-            
+        
             // -- check user handshake exist
             if crypto.getHandshakeExist(for: recipient) {
                 
-                try send(data, to: recipient)
+                self.encryptMessage(message: message, to: recipient) { (result) in
+                    
+                    let envelope : Chat_Envelope = .with {
+                        $0.from = self.authenticator.username!
+                        $0.to = recipient
+                        $0.payload = result!
+                    }
+                    
+                    let chit: Chat_Chit = .with {
+                        $0.what = .envelope
+                        $0.envelope = envelope
+                    }
+                    
+                    do {
+                        let data = try chit.serializedData()
+                        try self.send(data, to: recipient)
+                    } catch {
+                        print(error.localizedDescription)
+                    }
+                    
+                }
                 
             } else {
-                
+                queueHandShake[recipient] = message
                 sendHandshake(to: recipient, completion)
             }
-
-        } catch {
-            Backend.log("Backend send envelope error: \(error)")
-            completion(false, error)
-        }
+        
     }
 
-    // private
+    private func encryptMessage(message: String, to recipient: String, _ completion: @escaping (Data?) -> Void) {
+        
+        guard let messageUTF8 = message.data(using: .utf8) else {
+            print("Could not datify \(message)")
+            completion(nil)
+            return
+        }
+        
+        guard let encrypt = try? crypto.encrypt(messageUTF8, for: recipient) else {
+            print("Could not datify \(message)")
+            completion(nil)
+            return
+        }
+        
+        let archivedModel = SealedMessageArchived(senderAgreement: encrypt.senderAgreement,
+                                                  ciphertext: encrypt.ciphertext,
+                                                  signature: encrypt.signature)
+        
+        guard let payload = SealedMessageArchived.archivedData(model: archivedModel) else {
+            print("Could encode data SealedMessageArchived")
+            completion(nil)
+            return
+        }
+        
+        completion(payload)
+    }
 
     private let group: MultiThreadedEventLoopGroup
     private let client: Grpc_PscrudClient
     private let connection: ClientConnection
     private let crypto = Crypto()
     private var queue: [String:Data] = [:]
+    
+    private var queueHandShake: [String: String] = [:]
 
     internal static func handleResult(_ result: Result<Grpc_Response, Error>,
                              _ completion: @escaping (Bool, Error?) -> Void) {
@@ -141,9 +161,36 @@ class Backend: ObservableObject {
             break
         case .envelope:
             print("Heard envelope")
-            let post = PostModel(id: id, envelope: chit.envelope, from: chit.envelope.from)
-            Backend.log("received \(chit.envelope.payload)")
-            self.messages.append(post)
+            
+            if let modelArchived: SealedMessageArchived = SealedMessageArchived.unarchiveData(data: chit.envelope.payload),
+                let senderAgreement = modelArchived.senderAgreement,
+                let ciphertext = modelArchived.ciphertext,
+                let signature = modelArchived.signature {
+                
+                let model = Crypto.SealedMessage.init(senderAgreement: senderAgreement, ciphertext: ciphertext, signature: signature)
+                
+                do {
+                    
+                    let message = try crypto.decrypt(model, from: chit.envelope.from)
+                    
+                    var tempEnvelope: Chat_Envelope = chit.envelope
+                    tempEnvelope.payload = message
+                    
+                    let post = PostModel(id: id, envelope: tempEnvelope, from: chit.envelope.from)
+                    Backend.log("received \(tempEnvelope.payload)")
+                    self.messages.append(post)
+                    
+                } catch {
+                    print(error.localizedDescription)
+                }
+                
+            } else {
+                print("SealedMessageUnarchived error ---> 😂")
+                let post = PostModel(id: id, envelope: chit.envelope, from: chit.envelope.from)
+                Backend.log("received \(chit.envelope.payload)")
+                self.messages.append(post)
+            }
+            
         case .UNRECOGNIZED(_):
             Backend.log("Error: unrecognized chit")
         }
@@ -189,10 +236,10 @@ class Backend: ObservableObject {
             let peer = handshake.from
             print("Received handshake from \(peer)")
 
-//            let signing = try Crypto.signing(from: handshake.signing)
+            let signing = try Crypto.signing(from: handshake.signing)
             let agreement = try Crypto.agreement(from: handshake.agreement)
             let keySend = Crypto.KeySend(sequence: sequence,
-                                         signing: nil,
+                                         signing: signing,
                                          agreement: agreement)
             if crypto.set(keySend, from: peer) {
                 
@@ -206,18 +253,34 @@ class Backend: ObservableObject {
                 
                 
             } else {
-                // sender
-                if let data = queue[peer] {
-                    do {
-                        try send(data, to: peer)
-                        queue.removeValue(forKey: peer)
-                    } catch {
-                        print("-----------> " , error.localizedDescription)
-                    }
-                } else {
-                    print("----------->")
+                
+                guard let message = queueHandShake[peer] else {
+                    return
                 }
                 
+                self.encryptMessage(message: message, to: peer) { (result) in
+                    
+                    do {
+                        let envelope : Chat_Envelope = .with {
+                            $0.from = self.authenticator.username!
+                            $0.to = peer
+                            $0.payload = result!
+                        }
+                        
+                        let chit: Chat_Chit = .with {
+                            $0.what = .envelope
+                            $0.envelope = envelope
+                        }
+                        
+                        let dataBackend = try chit.serializedData()
+                        
+                        try self.send(dataBackend, to: peer)
+                        self.queueHandShake.removeValue(forKey: peer)
+                        
+                    } catch {
+                        print(error.localizedDescription, " ----->")
+                    }
+                }
             }
             
         } catch {
