@@ -31,11 +31,12 @@ import chat.Chat
 import com.example.data.DataStore
 import com.example.db.UserRepository
 import com.example.model.Message
+import com.example.secure.CryptoChaCha20
 import com.example.secure.CryptoHelper
-import com.example.secure.TinkPbe
 import com.example.ui.Screen
 import com.example.ui.navigateTo
 import com.example.ui.widget.HintEditText
+import com.example.utils.base64Decode
 import com.google.gson.Gson
 import com.google.protobuf.ByteString
 import grpc.PscrudGrpc
@@ -207,7 +208,8 @@ fun hear(
                 }
                 Log.e("Enc", "peer: receive envelop" + Gson().toJson(keySet))
                 try {
-                    val strDecr = TinkPbe.decrypt(chit.envelope.payload.toStringUtf8(), secret)
+                    val byteData = base64Decode(chit.envelope.payload.toStringUtf8())
+                    val strDecr = CryptoChaCha20.decrypt(byteData, secret)
                     messagesList.add(
                         Message(
                             id,
@@ -374,7 +376,7 @@ private fun  sendMessage(
     val secret = keySet?.let {
         CryptoHelper.getSecretKey(it)
     }
-    val msg = TinkPbe.encrypt(msgSend, secret)
+    val msg = CryptoChaCha20.encrypt(msgSend.toByteArray(), secret)
     Log.e("Enc", "Msg send : " + Gson().toJson(keySet))
 
     val envelope = Chat.Envelope.newBuilder().setFrom(DataStore.username)
