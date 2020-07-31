@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		052A537224AD4FF200C432BB /* NoteListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052A537124AD4FF200C432BB /* NoteListView.swift */; };
 		760B6CBC243925300075A6B7 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 760B6CBB243925300075A6B7 /* SwiftProtobuf */; };
 		760B6CBE243925300075A6B7 /* GRPC in Frameworks */ = {isa = PBXBuildFile; productRef = 760B6CBD243925300075A6B7 /* GRPC */; };
 		760B6CBF243B05FD0075A6B7 /* Backend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C6F0D624386207006D1559 /* Backend.swift */; };
@@ -69,6 +70,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		052A537124AD4FF200C432BB /* NoteListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteListView.swift; sourceTree = "<group>"; };
 		761121AE244CDBD600A1CCEE /* chat.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = chat.pb.swift; sourceTree = "<group>"; };
 		761121AF244CDBD600A1CCEE /* pscrud.grpc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = pscrud.grpc.swift; sourceTree = "<group>"; };
 		761121B0244CDBD600A1CCEE /* pscrud.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = pscrud.pb.swift; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 				76C6F0D924386207006D1559 /* MotherView.swift */,
 				76C6F0D824386207006D1559 /* MasterDetailView.swift */,
 				76C6F0D424386207006D1559 /* MasterView.swift */,
+				052A537124AD4FF200C432BB /* NoteListView.swift */,
 				76C6F0D324386207006D1559 /* DetailView.swift */,
 				76C6F0D524386207006D1559 /* MenuView.swift */,
 				76C6F0DA24386207006D1559 /* ProfileView.swift */,
@@ -398,6 +401,7 @@
 				76C6F0A424385F50006D1559 /* SceneDelegate.swift in Sources */,
 				761121B2244CDBD600A1CCEE /* pscrud.grpc.swift in Sources */,
 				76C499AA24516B1B0058FF66 /* Authenticator.swift in Sources */,
+				052A537224AD4FF200C432BB /* NoteListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -582,6 +586,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"ClearKeep/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = ClearKeep/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -602,6 +607,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"ClearKeep/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = ClearKeep/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

@@ -27,3 +27,9 @@ message Chit {
     Handshake handshake = 3;
     Envelope envelope = 4;
 }
+
+message Note {
+    string title = 1;
+    string content = 2;
+    string noteId = 3;
+}

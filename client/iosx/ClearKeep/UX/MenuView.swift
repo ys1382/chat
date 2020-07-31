@@ -26,6 +26,19 @@ struct MenuView: View {
                     .font(.headline)
             }
             .padding(.top, 30)
+
+            HStack {
+                Image(systemName: "square.and.pencil")
+                    .foregroundColor(.gray)
+                    .imageScale(.large)
+                Button(action: gotoNotes) {
+                    Text("Notes")
+                }
+                    .foregroundColor(.gray)
+                    .font(.headline)
+            }
+            .padding(.top, 30)
+            
             Spacer()
         }
             .padding()
@@ -36,6 +49,10 @@ struct MenuView: View {
 
     private func gotoProfile() {
         self.viewRouter.current = .profile
+    }
+
+    private func gotoNotes() {
+        self.viewRouter.current = .notes
     }
 }
 

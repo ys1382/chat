@@ -15,6 +15,8 @@ struct MotherView : View {
                 MasterDetailView().transition(.move(edge: .trailing))
             } else if viewRouter.current == .profile {
                 ProfileView()
+            } else if viewRouter.current == .notes {
+                NoteListView(store: NoteStore())
             }
         }
     }
@@ -32,6 +34,7 @@ class ViewRouter: ObservableObject {
         case login
         case masterDetail
         case profile
+        case notes
     }
 
     private static func initialPage() -> Page {
