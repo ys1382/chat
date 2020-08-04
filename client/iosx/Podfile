@@ -5,6 +5,7 @@ target 'ClearKeep' do
   
   pod 'Tink'
   pod 'SwiftyJSON'
+  pod 'IQKeyboardManagerSwift'
   # pod 'SignalServiceKit', git: 'https://github.com/WhisperSystems/SignalServiceKit.git'
   # Pods for ClearKeep
 

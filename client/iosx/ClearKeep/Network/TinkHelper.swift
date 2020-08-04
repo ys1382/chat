@@ -300,7 +300,7 @@ extension TinkHelper {
 extension TinkHelper {
     
     private func json() -> Data? {
-            let text = "{\n    \"primaryKeyId\": 1234567,\n    \"key\": [{\n        \"keyData\": {\n            \"typeUrl\": \"type.googleapis.com/google.crypto.tink.AesGcmKey\",\n            \"keyMaterialType\": \"SYMMETRIC\",\n            \"value\": \"GiDA9kdJH43/rE5j7MmH2qBqIpJhXVJ54+ILE0A7McB1Hw==\"\n        },\n        \"outputPrefixType\": \"TINK\",\n        \"keyId\": 1234567,\n        \"status\": \"ENABLED\"\n    }]\n}"
+            let text = "{\n        \"primaryKeyId\": 1234567,\n        \"key\": [{\n            \"keyData\": {\n                \"typeUrl\": \"type.googleapis.com/google.crypto.tink.AesGcmKey\",\n                \"keyMaterialType\": \"SYMMETRIC\",\n                \"value\": \"GiAk/Ze5RL5HurIV5vls3OtBBWzwIMn9rO1F5HyBmqOSHQ==\"\n            },\n            \"outputPrefixType\": \"TINK\",\n            \"keyId\": 1234567,\n            \"status\": \"ENABLED\"\n        }]\n    }"
             let json = JSON(parseJSON: text)
             
             
