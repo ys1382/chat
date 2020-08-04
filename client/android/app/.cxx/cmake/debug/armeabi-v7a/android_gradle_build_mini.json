@@ -1,0 +1,18 @@
+{
+  "buildFiles": [
+    "D:\\Vmodev\\Jetpack +gRPC\\chat\\client\\android\\app\\src\\main\\cpp\\CMakeLists.txt"
+  ],
+  "cleanCommands": [
+    "C:\\Users\\hohai\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe -C \"D:\\Vmodev\\Jetpack +gRPC\\chat\\client\\android\\app\\.cxx\\cmake\\debug\\armeabi-v7a\" clean"
+  ],
+  "buildTargetsCommand": "C:\\Users\\hohai\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe  -C \"D:\\Vmodev\\Jetpack +gRPC\\chat\\client\\android\\app\\.cxx\\cmake\\debug\\armeabi-v7a\" {LIST_OF_TARGETS_TO_BUILD}",
+  "libraries": {
+    "native-lib-Debug-armeabi-v7a": {
+      "artifactName": "native-lib",
+      "buildCommand": "C:\\Users\\hohai\\AppData\\Local\\Android\\Sdk\\cmake\\3.10.2.4988404\\bin\\ninja.exe -C \"D:\\Vmodev\\Jetpack +gRPC\\chat\\client\\android\\app\\.cxx\\cmake\\debug\\armeabi-v7a\" native-lib",
+      "abi": "armeabi-v7a",
+      "output": "D:\\Vmodev\\Jetpack +gRPC\\chat\\client\\android\\app\\build\\intermediates\\cmake\\debug\\obj\\armeabi-v7a\\libnative-lib.so",
+      "runtimeFiles": []
+    }
+  }
+}

@@ -1,5 +1,6 @@
 package com.example.secure
 
+import android.util.Log
 import com.example.utils.base64Decode
 import com.example.utils.base64Encode
 import com.google.crypto.tink.CleartextKeysetHandle
@@ -17,10 +18,11 @@ import javax.crypto.spec.PBEKeySpec
 object TinkPbe {
     val PW = "Password".toCharArray()
     @Throws(GeneralSecurityException::class, IOException::class)
-    fun encrypt(plaintextString: String,secretKey: ByteArray?): String {
+    fun encrypt(plaintextString: String,secretKey: ByteArray?): ByteArray {
         val keyByte = pbkdf2()
         val valueString = buildValue(keyByte)
         val jsonKeyString = writeJson(valueString)
+        Log.e("jsonKeyString", jsonKeyString)
         val keysetHandleOwn =
             CleartextKeysetHandle.read(JsonKeysetReader.withString(jsonKeyString))
         val aead = AeadFactory.getPrimitive(keysetHandleOwn)
@@ -28,7 +30,8 @@ object TinkPbe {
             plaintextString.toByteArray(StandardCharsets.UTF_8),
             secretKey
         ) // no aad-data
-        return base64Encode(ciphertextByte)
+//        return base64Encode(ciphertextByte)
+        return ciphertextByte
     }
 
     @Throws(GeneralSecurityException::class, IOException::class)
@@ -43,6 +46,21 @@ object TinkPbe {
         // verschlüsselung
         val plaintextByte =
             aead.decrypt(base64Decode(ciphertextString!!), secretKey) // no aad-data
+        return String(plaintextByte, StandardCharsets.UTF_8)
+    }
+
+    @Throws(GeneralSecurityException::class, IOException::class)
+    fun decrypt(ciphertextByte: ByteArray, secretKey: ByteArray?): String {
+        val keyByte = pbkdf2()
+        val valueString = buildValue(keyByte)
+        val jsonKeyString = writeJson(valueString)
+        val keysetHandleOwn =
+            CleartextKeysetHandle.read(JsonKeysetReader.withString(jsonKeyString))
+        // initialisierung
+        val aead = AeadFactory.getPrimitive(keysetHandleOwn)
+        // verschlüsselung
+        val plaintextByte =
+            aead.decrypt(ciphertextByte, secretKey) // no aad-data
         return String(plaintextByte, StandardCharsets.UTF_8)
     }
 
@@ -61,7 +79,7 @@ object TinkPbe {
             PBKDF2_ITERATIONS,
             HASH_SIZE_BYTE
         )
-        val skf =SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512")
+        val skf =SecretKeyFactory.getInstance("PBKDF2withHmacSHA1")
         return skf.generateSecret(spec).encoded
     }
 

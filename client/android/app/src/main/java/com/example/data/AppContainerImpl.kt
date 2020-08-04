@@ -6,11 +6,12 @@ import android.os.Looper
 import com.example.db.UserDatabase
 import com.example.db.UserLocalDataSource
 import com.example.db.UserRepository
-import com.example.secure.CryptoHelper
 import grpc.PscrudGrpc
 import io.grpc.ManagedChannelBuilder
-import kotlinx.coroutines.*
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asExecutor
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 
 
 /**
@@ -31,8 +32,8 @@ interface AppContainer {
  */
 class AppContainerImpl(context: Context) : AppContainer {
     override val grpcClient: PscrudGrpc.PscrudStub by lazy {
-//        val channel = ManagedChannelBuilder.forAddress("jetpack.tel.red", 11912)
-        val channel = ManagedChannelBuilder.forAddress("10.0.2.2", 11912)
+        val channel = ManagedChannelBuilder.forAddress("jetpack.tel.red", 11912)
+//        val channel = ManagedChannelBuilder.forAddress("10.0.2.2", 11912)
             .usePlaintext()
             .executor(Dispatchers.Default.asExecutor())
             .build()

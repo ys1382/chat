@@ -4,8 +4,6 @@ import android.text.TextUtils
 import chat.Chat
 import com.example.data.DataStore
 import com.example.db.UserRepository
-import com.example.model.User
-import com.google.crypto.tink.subtle.X25519
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.google.protobuf.ByteString
@@ -14,15 +12,15 @@ object CryptoHelper {
     val keys = mutableMapOf<String, KeySet>()
 
     data class KeySend(
-        var signing: ByteArray?, //Curve25519.Signing.PublicKey?
-        var agreement: ByteArray //Curve25519.KeyAgreement.PublicKey
+        var signing: ByteArray?,
+        var agreement: ByteArray
     )
 
     data class KeySet(
-        var ourSigning: ByteArray,  //Signing.PrivateKey
-        var ourAgreement: ByteArray, //KeyAgreement.PrivateKey
-        var theirSigning: ByteArray?, //Signing.PublicKey?
-        var theirAgreement: ByteArray? //KeyAgreement.PublicKey?
+        var ourSigning: ByteArray,
+        var ourAgreement: ByteArray,
+        var theirSigning: ByteArray?,
+        var theirAgreement: ByteArray?
     )
 
     fun initKeysSession(keyPair: String?) {
@@ -31,7 +29,7 @@ object CryptoHelper {
             val listDeviceConnect: MutableMap<String, KeySet> =
                 Gson().fromJson(keyPair, type)
 
-            for ( item in listDeviceConnect){
+            for (item in listDeviceConnect) {
                 keys.put(item.key, item.value)
             }
         }
@@ -85,9 +83,8 @@ object CryptoHelper {
 
             return false
         } else {
-            val privateKey = X25519.generatePrivateKey();
-            val publishKey = X25519.publicFromPrivate(privateKey);
-
+            val privateKey = Curve25519Donna().getPrivateKey()
+            val publishKey = Curve25519Donna().getPublicKey(privateKey)
             keys[sender] = KeySet(
                 privateKey,
                 publishKey,
@@ -122,15 +119,14 @@ object CryptoHelper {
             return KeySend(key.ourSigning, key.ourAgreement)
         } else {
             // Generate my KeyPair
-            val privateKey = X25519.generatePrivateKey()
-            val publishKey = X25519.publicFromPrivate(privateKey);
-
+            val privateKey = Curve25519Donna().getPrivateKey()
+            val publishKey = Curve25519Donna().getPublicKey(privateKey)
             keys[recipient] = KeySet(privateKey, publishKey, null, null)
             return KeySend(privateKey, publishKey)
         }
     }
 
     fun getSecretKey(keySet: KeySet): ByteArray? {
-        return X25519.computeSharedSecret(keySet.ourSigning, keySet.theirAgreement)
+        return Curve25519Donna().getSharedKey(keySet.ourSigning, keySet.theirAgreement!!)
     }
 }
