@@ -207,7 +207,8 @@ fun hear(
                 }
                 Log.e("Enc", "peer: receive envelop" + Gson().toJson(keySet))
                 try {
-                    val strDecr = TinkPbe.decrypt(chit.envelope.payload.toStringUtf8(), secret)
+//                    val strDecr = TinkPbe.decrypt(chit.envelope.payload.toStringUtf8(), secret)
+                    val strDecr = TinkPbe.decrypt(chit.envelope.payload.toByteArray(), secret)
                     messagesList.add(
                         Message(
                             id,
@@ -378,7 +379,7 @@ private fun  sendMessage(
     Log.e("Enc", "Msg send : " + Gson().toJson(keySet))
 
     val envelope = Chat.Envelope.newBuilder().setFrom(DataStore.username)
-        .setPayload(ByteString.copyFromUtf8(msg))
+        .setPayload(ByteString.copyFrom(msg))
         .setTo(peer)
         .build()
 

@@ -19,8 +19,8 @@ class Curve25519Donna {
     }
 
     fun getPublicKey(privateKey: ByteArray): ByteArray {
-        val baseOption = ByteArray(32);
-        baseOption[0] = 9;
+        val baseOption = ByteArray(32)
+        baseOption[0] = 9
         return curve25519_donna(privateKey, baseOption)
     }
 
