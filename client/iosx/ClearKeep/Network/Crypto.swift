@@ -1,7 +1,9 @@
 import CryptoKit
 import Foundation
 
-class Crypto {
+open class Crypto {
+    
+    static let shared: Crypto = Crypto()
 
     struct SealedMessage {
         let senderAgreement: Data
@@ -26,11 +28,11 @@ class Crypto {
     func get(for recipient: String) -> KeySend {
         sequence = sequence &+ 1
         if let key = keys[recipient] {
-            let agreement = Curve25519.KeyAgreement.PrivateKey()
-            keys[recipient]!.ourAgreement = agreement
+//            let agreement = Curve25519.KeyAgreement.PrivateKey()
+//            keys[recipient]!.ourAgreement = agreement
             return KeySend(sequence: sequence,
                            signing: key.ourSigning.publicKey,
-                           agreement: agreement.publicKey)
+                           agreement: key.ourAgreement.publicKey)
         } else {
             let signing = Curve25519.Signing.PrivateKey()
             let agreement = Curve25519.KeyAgreement.PrivateKey()
@@ -47,45 +49,47 @@ class Crypto {
     
 
     
+    // -- check
     func getHandshakeExist(for recipient: String) -> Bool {
-        
-        if keys.isEmpty {
-
-            ListKeySendArchived.unarchiveData().forEach { (model) in
-
-                guard let object = model.object,
-                    let ourSigning = object.ourSigning,
-                    let ourAgreement = object.ourAgreement,
-                    let theirAgreement = object.theirAgreement else {
-
-                    return
-                }
-
-                do {
-                    let signingPrivate = try Curve25519.Signing.PrivateKey(rawRepresentation: ourSigning)
-
-                    let agreementPrivate = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: ourAgreement)
-
-                    let agreementPublic = try! Crypto.agreement(from: theirAgreement)
-
-                    let keySet = KeySet(sequence: object.sequence,
-                                        ourSigning: signingPrivate,
-                                        ourAgreement: agreementPrivate,
-                                        theirSigning: nil,
-                                        theirAgreement: agreementPublic)
-
-                    keys[model.key] = keySet
-                } catch {
-
-                    print(error.localizedDescription)
-                }
-            }
-        }
-        
         if let key = keys[recipient] {
+            
             return true
         } else {
             return false
+        }
+    }
+    
+    
+    func loadKeySend() {
+        
+        ListKeySendArchived.unarchiveData().forEach { (model) in
+
+            guard let object = model.object,
+                let ourSigning = object.ourSigning,
+                let ourAgreement = object.ourAgreement,
+                let theirAgreement = object.theirAgreement else {
+
+                return
+            }
+
+            do {
+                let signingPrivate = try Curve25519.Signing.PrivateKey(rawRepresentation: ourSigning)
+
+                let agreementPrivate = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: ourAgreement)
+
+                let agreementPublic = try! Crypto.agreement(from: theirAgreement)
+
+                let keySet = KeySet(sequence: object.sequence,
+                                    ourSigning: signingPrivate,
+                                    ourAgreement: agreementPrivate,
+                                    theirSigning: nil,
+                                    theirAgreement: agreementPublic)
+
+                keys[model.key] = keySet
+            } catch {
+
+                print(error.localizedDescription)
+            }
         }
     }
 
@@ -185,12 +189,12 @@ class Crypto {
                           using ourAgreement: Curve25519.KeyAgreement.PrivateKey,
                           from theirSigning: Curve25519.Signing.PublicKey) throws -> Data {
 
-        let data = sealedMessage.ciphertext +
-                   sealedMessage.senderAgreement +
-                   ourAgreement.publicKey.rawRepresentation
-        guard theirSigning.isValidSignature(sealedMessage.signature, for: data) else {
-            throw Backend.BackendError.crypto(message: "Invalid signature")
-        }
+//        let data = sealedMessage.ciphertext +
+//                   sealedMessage.senderAgreement +
+//                   ourAgreement.publicKey.rawRepresentation
+//        guard theirSigning.isValidSignature(sealedMessage.signature, for: data) else {
+//            throw Backend.BackendError.crypto(message: "Invalid signature")
+//        }
 
         let senderAgreement = try Curve25519.KeyAgreement.PublicKey(
                 rawRepresentation: sealedMessage.senderAgreement)
@@ -209,6 +213,66 @@ class Crypto {
     }
 }
 
+class SealedMessageArchived: NSObject, NSCoding {
+    
+    var senderAgreement: Data?
+    
+    var ciphertext: Data?
+    
+    var signature: Data?
+    
+    
+    override init() {
+        super.init()
+    }
+    
+    
+    init(senderAgreement: Data?, ciphertext: Data?, signature: Data?) {
+        self.senderAgreement = senderAgreement
+        self.ciphertext = ciphertext
+        self.signature = signature
+    }
+    
+    
+    func encode(with coder: NSCoder) {
+        coder.encode(self.senderAgreement, forKey: "senderAgreement")
+        coder.encode(self.ciphertext, forKey: "ciphertext")
+        coder.encode(self.signature, forKey: "signature")
+    }
+
+    
+    required init?(coder: NSCoder) {
+        self.senderAgreement = coder.decodeObject(forKey: "senderAgreement") as? Data
+        self.ciphertext = coder.decodeObject(forKey: "ciphertext") as? Data
+        self.signature = coder.decodeObject(forKey: "signature") as? Data
+    }
+    
+}
+
+ // MARK: Convent Model ---> Data
+extension SealedMessageArchived {
+   
+    static func archivedData(model: SealedMessageArchived) -> Data? {
+        
+        guard let result = try? NSKeyedArchiver.archivedData(withRootObject: model, requiringSecureCoding: false) else {
+            print("Archived Data Fail -----> 😂")
+            return nil
+        }
+        
+        return result
+    }
+    
+    
+    static func unarchiveData(data: Data) -> SealedMessageArchived? {
+        
+        guard let model = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? SealedMessageArchived else {
+            print("Unarchive Data Fail -----> 😂")
+            return nil
+        }
+        
+        return model
+    }
+}
 
 class ListKeySendArchived: NSObject, NSCoding {
     
@@ -265,14 +329,26 @@ class ListKeySendArchived: NSObject, NSCoding {
     }
     
     
-    static func getData(data: Data, completion: (Curve25519.Signing.PublicKey?) -> Void) {
-        do {
-            let a = try Curve25519.Signing.PublicKey(rawRepresentation: data)
-            completion(a)
-            
-        } catch {
-            completion(nil)
+}
+
+// MARK: Save Key Google Tink
+extension ListKeySendArchived {
+    
+    static func archivedData(dataTink: [String: TinkHelper.KeySet]) {
+        
+        let mapObj = dataTink.map { ListKeySendArchived(key: $0.key, value: KeySendArchivedData(sequence: $0.value.sequence,
+                                                                                            ourSigning: $0.value.ourSigning,
+                                                                                            ourAgreement: $0.value.ourAgreement,
+                                                                                            theirSigning: $0.value.theirSigning,
+                                                                                            theirAgreement: $0.value.theirAgreement))}
+        
+        guard let saveData = try? NSKeyedArchiver.archivedData(withRootObject: mapObj, requiringSecureCoding: false) else {
+            print("Fail store data")
+            return
         }
+        
+        let manager = UserDefaults.standard
+        manager.set(saveData, forKey: "keyStore")
     }
 }
 

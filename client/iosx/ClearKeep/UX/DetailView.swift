@@ -4,7 +4,8 @@ struct DetailView: View {
 
     private let selectedRoom: String
     @State private var nextMessage: String = ""
-    @ObservedObject var resource = Backend.shared
+//    @ObservedObject var resource = Backend.shared
+    @ObservedObject var resource = BackendTink.shared
     
     init(room: String) {
         selectedRoom = room
@@ -12,7 +13,7 @@ struct DetailView: View {
 
     var body: some View {
         
-        print(resource.messages)
+//        print(resource.messages)
         
         return VStack {
 //            List(resource.messages, rowContent: PostView.init)
@@ -28,6 +29,9 @@ struct DetailView: View {
                     Image(systemName: "paperplane")
                 }.padding(.trailing)
             }
+            
+        }.onAppear() {
+            self.resource.messages.removeAll()
         }
     }
 
@@ -49,9 +53,16 @@ struct DetailView: View {
         }
         
         let post = PostModel(id: "", envelope: chit.envelope, from: envelope.from)
-        Backend.shared.messages.append(post)
+//        Backend.shared.messages.append(post)
+//
+//        Backend.shared.send(nextMessage,
+//                            to: self.selectedRoom) { success, error in
+//            print("DetailView sent: success=\(success), error=\(String(describing: error))")
+//        }
         
-        Backend.shared.send(nextMessage,
+        BackendTink.shared.messages.append(post)
+        
+        BackendTink.shared.send(nextMessage,
                             to: self.selectedRoom) { success, error in
             print("DetailView sent: success=\(success), error=\(String(describing: error))")
         }
@@ -65,7 +76,8 @@ struct PostView: View {
 
     var body: some View {
         
-        let checkSender = postModel.from == Backend.shared.authenticator.username!
+//        let checkSender = postModel.from == Backend.shared.authenticator.username!
+        let checkSender = postModel.from == BackendTink.shared.authenticator.username!
         
         if checkSender {
             

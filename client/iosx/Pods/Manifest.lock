@@ -1,0 +1,28 @@
+PODS:
+  - IQKeyboardManagerSwift (6.5.5)
+  - rapidjson (1.1.0)
+  - SwiftyJSON (5.0.0)
+  - Tink (1.4.0):
+    - rapidjson (~> 1.1.0)
+
+DEPENDENCIES:
+  - IQKeyboardManagerSwift
+  - SwiftyJSON
+  - Tink
+
+SPEC REPOS:
+  trunk:
+    - IQKeyboardManagerSwift
+    - rapidjson
+    - SwiftyJSON
+    - Tink
+
+SPEC CHECKSUMS:
+  IQKeyboardManagerSwift: 0fb93310284665245591f50f7a5e38de615960b7
+  rapidjson: 926ddeea70d7a0987b6d746cd9fa51f165467cd3
+  SwiftyJSON: 36413e04c44ee145039d332b4f4e2d3e8d6c4db7
+  Tink: 65f9bdf23e13cbee49c4e06676fe8f88ffd320bf
+
+PODFILE CHECKSUM: 99db23bc4f959426af9ec88cf29c9ecc11f32e0b
+
+COCOAPODS: 1.9.3

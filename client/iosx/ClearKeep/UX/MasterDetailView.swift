@@ -8,7 +8,8 @@ struct MasterDetailView: View {
     @State private var showMenu = false
     @State private var showModal = false
 
-    @ObservedObject var resource = Backend.shared
+//    @ObservedObject var resource = Backend.shared
+    @ObservedObject var resource = BackendTink.shared
 
     var body: some View {
 

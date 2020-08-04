@@ -2,7 +2,8 @@ import SwiftUI
 
 struct MasterView: View {
 
-    @ObservedObject var resource = Backend.shared
+//    @ObservedObject var resource = Backend.shared
+    @ObservedObject var resource = BackendTink.shared
 
     var body: some View {
         Group {

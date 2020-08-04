@@ -56,7 +56,8 @@ class Pscrud {
             $0.topic = topic
         }
         client.subscribe(request).response.whenComplete { result in
-            Backend.handleResult(result, completion)
+//            Backend.handleResult(result, completion)
+            BackendTink.handleResult(result, completion)
         }
     }
 
