@@ -1,0 +1,4 @@
+# ninja log v5
+3	1347	618228621	CMakeFiles/native-lib.dir/curve25519-donna.c.o	b0127be62be63955
+95	3154	618228623	CMakeFiles/native-lib.dir/native-lib.cpp.o	a13e66b0ff4c7ebd
+3155	3685	618228623	D:/Vmodev/Jetpack +gRPC/chat/client/android/app/build/intermediates/cmake/debug/obj/arm64-v8a/libnative-lib.so	66d32c493cb2d43e
