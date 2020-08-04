@@ -2,8 +2,10 @@
 # platform :ios, '9.0'
 
 target 'ClearKeep' do
-  pod 'Tink', '1.4.0'
-
+  
+  pod 'Tink'
+  pod 'SwiftyJSON'
+  # pod 'SignalServiceKit', git: 'https://github.com/WhisperSystems/SignalServiceKit.git'
   # Pods for ClearKeep
 
   target 'ClearKeepTests' do

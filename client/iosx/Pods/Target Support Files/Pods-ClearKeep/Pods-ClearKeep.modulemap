@@ -1,0 +1,6 @@
+module Pods_ClearKeep {
+  umbrella header "Pods-ClearKeep-umbrella.h"
+
+  export *
+  module * { export * }
+}

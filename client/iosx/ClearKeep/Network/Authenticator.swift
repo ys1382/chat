@@ -129,7 +129,8 @@ class Authenticator {
     private func authenticated(session: String,
                                _ completion: @escaping (Bool, Error?) -> Void) {
         self.session = session
-        Backend.shared.authenticated(completion)
+//        Backend.shared.authenticated(completion)
+        BackendTink.shared.authenticated(completion)
     }
 
     private func nauthenticate(_ completion: @escaping (Bool, Error?) -> Void) {

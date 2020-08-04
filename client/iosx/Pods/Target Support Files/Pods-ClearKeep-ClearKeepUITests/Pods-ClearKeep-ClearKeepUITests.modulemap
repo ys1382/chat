@@ -1,0 +1,6 @@
+module Pods_ClearKeep_ClearKeepUITests {
+  umbrella header "Pods-ClearKeep-ClearKeepUITests-umbrella.h"
+
+  export *
+  module * { export * }
+}

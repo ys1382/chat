@@ -8,7 +8,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                willConnectTo session: UISceneSession,
                options connectionOptions: UIScene.ConnectionOptions) {
 
-        Backend.shared.authenticator.reauthenticate() { _,_ in
+//        Backend.shared.authenticator.reauthenticate() { _,_ in
+//            DispatchQueue.main.async {
+//                self.show(scene)
+//            }
+//        }
+        
+        BackendTink.shared.authenticator.reauthenticate() { _,_ in
             DispatchQueue.main.async {
                 self.show(scene)
             }

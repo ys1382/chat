@@ -34,7 +34,16 @@ struct LoginView : View {
     }
 
     func register() {
-        Backend.shared.authenticator.register(username, password) { success, error in
+//        Backend.shared.authenticator.register(username, password) { success, error in
+//            if success {
+//                self.viewRouter.current = .masterDetail
+//            } else {
+//                print("register failed \(String(describing: error))")
+//            }
+//        }
+        
+        BackendTink.shared.authenticator.register(username, password) { (success, error) in
+            
             if success {
                 self.viewRouter.current = .masterDetail
             } else {
@@ -44,7 +53,15 @@ struct LoginView : View {
     }
 
     func login() {
-        Backend.shared.authenticator.login(username, password) { success, error in
+//        Backend.shared.authenticator.login(username, password) { success, error in
+//            if success {
+//                self.viewRouter.current = .masterDetail
+//            } else {
+//                print("login failed \(String(describing: error))")
+//            }
+//        }
+        
+        BackendTink.shared.authenticator.login(username, password) { success, error in
             if success {
                 self.viewRouter.current = .masterDetail
             } else {

@@ -329,14 +329,26 @@ class ListKeySendArchived: NSObject, NSCoding {
     }
     
     
-    static func getData(data: Data, completion: (Curve25519.Signing.PublicKey?) -> Void) {
-        do {
-            let a = try Curve25519.Signing.PublicKey(rawRepresentation: data)
-            completion(a)
-            
-        } catch {
-            completion(nil)
+}
+
+// MARK: Save Key Google Tink
+extension ListKeySendArchived {
+    
+    static func archivedData(dataTink: [String: TinkHelper.KeySet]) {
+        
+        let mapObj = dataTink.map { ListKeySendArchived(key: $0.key, value: KeySendArchivedData(sequence: $0.value.sequence,
+                                                                                            ourSigning: $0.value.ourSigning,
+                                                                                            ourAgreement: $0.value.ourAgreement,
+                                                                                            theirSigning: $0.value.theirSigning,
+                                                                                            theirAgreement: $0.value.theirAgreement))}
+        
+        guard let saveData = try? NSKeyedArchiver.archivedData(withRootObject: mapObj, requiringSecureCoding: false) else {
+            print("Fail store data")
+            return
         }
+        
+        let manager = UserDefaults.standard
+        manager.set(saveData, forKey: "keyStore")
     }
 }
 

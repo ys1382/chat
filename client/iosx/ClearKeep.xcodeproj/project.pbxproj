@@ -7,15 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		160FF18A24D3D435009C7397 /* AssetsLibrary.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 160FF18924D3D435009C7397 /* AssetsLibrary.framework */; };
 		162A9FB924C7F46400B09A74 /* chat.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 162A9FB624C7F46400B09A74 /* chat.pb.swift */; };
 		162A9FBA24C7F46400B09A74 /* pscrud.grpc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 162A9FB724C7F46400B09A74 /* pscrud.grpc.swift */; };
 		162A9FBB24C7F46400B09A74 /* pscrud.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 162A9FB824C7F46400B09A74 /* pscrud.pb.swift */; };
+		16C96AA324D41DA300953120 /* curve25519_donna.c in Sources */ = {isa = PBXBuildFile; fileRef = 16C96AA224D41DA300953120 /* curve25519_donna.c */; };
+		16E159BA24D11176003C8C19 /* BackendTink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E159B924D11176003C8C19 /* BackendTink.swift */; };
+		16EA821C24D3F4280074F0B4 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 16EA821B24D3F4280074F0B4 /* SwiftProtobuf */; };
+		16EA821E24D3F42F0074F0B4 /* GRPC in Frameworks */ = {isa = PBXBuildFile; productRef = 16EA821D24D3F42F0074F0B4 /* GRPC */; };
 		16F2763224C96F33008E8BCE /* TinkHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16F2763124C96F33008E8BCE /* TinkHelper.swift */; };
 		760B6CBC243925300075A6B7 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 760B6CBB243925300075A6B7 /* SwiftProtobuf */; };
 		760B6CBE243925300075A6B7 /* GRPC in Frameworks */ = {isa = PBXBuildFile; productRef = 760B6CBD243925300075A6B7 /* GRPC */; };
 		760B6CBF243B05FD0075A6B7 /* Backend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C6F0D624386207006D1559 /* Backend.swift */; };
-		767B35FD243866B800466D8D /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 767B35FC243866B800466D8D /* SwiftProtobuf */; };
-		767B36022438688E00466D8D /* GRPC in Frameworks */ = {isa = PBXBuildFile; productRef = 767B36012438688E00466D8D /* GRPC */; };
 		767B36112438690B00466D8D /* UX.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767B36102438690B00466D8D /* UX.swift */; };
 		767B36122438690B00466D8D /* UX.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767B36102438690B00466D8D /* UX.swift */; };
 		767B36132438690B00466D8D /* UX.swift in Sources */ = {isa = PBXBuildFile; fileRef = 767B36102438690B00466D8D /* UX.swift */; };
@@ -67,9 +70,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		160FF18924D3D435009C7397 /* AssetsLibrary.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AssetsLibrary.framework; path = System/Library/Frameworks/AssetsLibrary.framework; sourceTree = SDKROOT; };
 		162A9FB624C7F46400B09A74 /* chat.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = chat.pb.swift; sourceTree = "<group>"; };
 		162A9FB724C7F46400B09A74 /* pscrud.grpc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = pscrud.grpc.swift; sourceTree = "<group>"; };
 		162A9FB824C7F46400B09A74 /* pscrud.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = pscrud.pb.swift; sourceTree = "<group>"; };
+		16C96AA224D41DA300953120 /* curve25519_donna.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = curve25519_donna.c; sourceTree = "<group>"; };
+		16C96AA424D41DFD00953120 /* ClearKeep-Bridging-Headder.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "ClearKeep-Bridging-Headder.h"; sourceTree = "<group>"; };
+		16E159B924D11176003C8C19 /* BackendTink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendTink.swift; sourceTree = "<group>"; };
 		16F2763124C96F33008E8BCE /* TinkHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TinkHelper.swift; sourceTree = "<group>"; };
 		1798A4B7782C176FB7B43A69 /* libPods-ClearKeep-ClearKeepUITests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ClearKeep-ClearKeepUITests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B5C56560B5819772A007B4D /* Pods-ClearKeepTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ClearKeepTests.debug.xcconfig"; path = "Target Support Files/Pods-ClearKeepTests/Pods-ClearKeepTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -113,9 +120,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				767B36022438688E00466D8D /* GRPC in Frameworks */,
-				767B35FD243866B800466D8D /* SwiftProtobuf in Frameworks */,
+				16EA821E24D3F42F0074F0B4 /* GRPC in Frameworks */,
 				F2E3464A7AC2703B83EB797C /* libPods-ClearKeep.a in Frameworks */,
+				160FF18A24D3D435009C7397 /* AssetsLibrary.framework in Frameworks */,
+				16EA821C24D3F4280074F0B4 /* SwiftProtobuf in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -153,6 +161,7 @@
 		767B35FB243866B800466D8D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				160FF18924D3D435009C7397 /* AssetsLibrary.framework */,
 				4E2689CB877A0C16D49F162E /* libPods-ClearKeep.a */,
 				1798A4B7782C176FB7B43A69 /* libPods-ClearKeep-ClearKeepUITests.a */,
 				EB3E0C4CAA2D99AA6F524B94 /* libPods-ClearKeepTests.a */,
@@ -185,6 +194,7 @@
 				76C499A924516B1B0058FF66 /* Pscrud.swift */,
 				76B4F4BA24419780004A177E /* Crypto.swift */,
 				16F2763124C96F33008E8BCE /* TinkHelper.swift */,
+				16E159B924D11176003C8C19 /* BackendTink.swift */,
 			);
 			path = Network;
 			sourceTree = "<group>";
@@ -221,6 +231,8 @@
 				76C6F0A724385F51006D1559 /* Assets.xcassets */,
 				76C6F0AF24385F51006D1559 /* Info.plist */,
 				76C6F0A924385F51006D1559 /* Preview Content */,
+				16C96AA224D41DA300953120 /* curve25519_donna.c */,
+				16C96AA424D41DFD00953120 /* ClearKeep-Bridging-Headder.h */,
 			);
 			path = ClearKeep;
 			sourceTree = "<group>";
@@ -283,8 +295,8 @@
 			);
 			name = ClearKeep;
 			packageProductDependencies = (
-				767B35FC243866B800466D8D /* SwiftProtobuf */,
-				767B36012438688E00466D8D /* GRPC */,
+				16EA821B24D3F4280074F0B4 /* SwiftProtobuf */,
+				16EA821D24D3F42F0074F0B4 /* GRPC */,
 			);
 			productName = ClearKeep;
 			productReference = 76C6F09E24385F50006D1559 /* ClearKeep.app */;
@@ -482,8 +494,10 @@
 			files = (
 				76C6F0DD24386207006D1559 /* MenuView.swift in Sources */,
 				76C6F0DF24386207006D1559 /* LoginView.swift in Sources */,
+				16E159BA24D11176003C8C19 /* BackendTink.swift in Sources */,
 				76C6F0E224386207006D1559 /* ProfileView.swift in Sources */,
 				76C6F0A224385F50006D1559 /* AppDelegate.swift in Sources */,
+				16C96AA324D41DA300953120 /* curve25519_donna.c in Sources */,
 				76C6F0E024386207006D1559 /* MasterDetailView.swift in Sources */,
 				76C6F0E124386207006D1559 /* MotherView.swift in Sources */,
 				76C6F0DE24386207006D1559 /* Backend.swift in Sources */,
@@ -675,6 +689,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"ClearKeep/Preview Content\"";
+				DEVELOPMENT_TEAM = QD37T5UQ3B;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = ClearKeep/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -684,6 +699,7 @@
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = telred.ClearKeep;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "/Users/reasonamu/Desktop/chat/client/iosx/ClearKeep/ClearKeep-Bridging-Headder.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -696,6 +712,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"ClearKeep/Preview Content\"";
+				DEVELOPMENT_TEAM = QD37T5UQ3B;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = ClearKeep/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -705,6 +722,7 @@
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = telred.ClearKeep;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "/Users/reasonamu/Desktop/chat/client/iosx/ClearKeep/ClearKeep-Bridging-Headder.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -855,22 +873,22 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		16EA821B24D3F4280074F0B4 /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 76C6F0D124386084006D1559 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
+		16EA821D24D3F42F0074F0B4 /* GRPC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 767B36002438688E00466D8D /* XCRemoteSwiftPackageReference "grpc-swift" */;
+			productName = GRPC;
+		};
 		760B6CBB243925300075A6B7 /* SwiftProtobuf */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 76C6F0D124386084006D1559 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
 			productName = SwiftProtobuf;
 		};
 		760B6CBD243925300075A6B7 /* GRPC */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 767B36002438688E00466D8D /* XCRemoteSwiftPackageReference "grpc-swift" */;
-			productName = GRPC;
-		};
-		767B35FC243866B800466D8D /* SwiftProtobuf */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 76C6F0D124386084006D1559 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
-			productName = SwiftProtobuf;
-		};
-		767B36012438688E00466D8D /* GRPC */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 767B36002438688E00466D8D /* XCRemoteSwiftPackageReference "grpc-swift" */;
 			productName = GRPC;
